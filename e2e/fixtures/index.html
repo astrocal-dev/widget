@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Astrocal Widget Test Page</title>
+    <style>
+      body {
+        font-family: sans-serif;
+        padding: 40px;
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      h1 {
+        margin-bottom: 20px;
+      }
+      .section {
+        margin-bottom: 40px;
+      }
+      #inline-widget {
+        min-height: 400px;
+      }
+      .theme-test {
+        --astrocal-primary: #e11d48;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Astrocal Widget Test Page</h1>
+
+    <div class="section">
+      <h2>Inline Widget</h2>
+      <div
+        id="inline-widget"
+        data-astrocal-event-type-id="test-event-type-id"
+        data-astrocal-mode="inline"
+        data-astrocal-api-url="http://localhost:3000"
+      ></div>
+    </div>
+
+    <div class="section">
+      <h2>Popup Widget</h2>
+      <button id="open-popup" type="button">Open Booking Popup</button>
+    </div>
+
+    <div class="section">
+      <h2>Themed Widget</h2>
+      <div id="themed-widget" class="theme-test"></div>
+    </div>
+
+    <script src="/widget.global.js"></script>
+    <script>
+      document.getElementById("open-popup").addEventListener("click", function () {
+        Astrocal.open({
+          eventTypeId: "test-event-type-id",
+          apiUrl: "http://localhost:3000",
+          mode: "popup",
+          onBookingCreated: function (booking) {
+            console.log("Booking created:", booking);
+          },
+          onClose: function () {
+            console.log("Widget closed");
+          },
+        });
+      });
+    </script>
+  </body>
+</html>

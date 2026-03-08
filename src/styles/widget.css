@@ -1,0 +1,637 @@
+:host {
+  /* Primary colors */
+  --astrocal-primary: #2563eb;
+  --astrocal-primary-hover: #1d4ed8;
+  --astrocal-primary-text: #ffffff;
+
+  /* Surface colors */
+  --astrocal-bg: #ffffff;
+  --astrocal-bg-secondary: #f9fafb;
+  --astrocal-bg-hover: #f3f4f6;
+
+  /* Text colors */
+  --astrocal-text: #111827;
+  --astrocal-text-secondary: #6b7280;
+  --astrocal-text-muted: #9ca3af;
+
+  /* Border colors */
+  --astrocal-border: #e5e7eb;
+  --astrocal-border-focus: #2563eb;
+
+  /* Shape */
+  --astrocal-radius: 8px;
+  --astrocal-radius-lg: 12px;
+
+  /* Typography */
+  --astrocal-font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --astrocal-font-size: 14px;
+
+  /* Shadows */
+  --astrocal-shadow: 0 1px 3px rgba(0, 0, 0, 0.1), 0 1px 2px rgba(0, 0, 0, 0.06);
+  --astrocal-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.15);
+
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  font-family: var(--astrocal-font);
+  font-size: var(--astrocal-font-size);
+  color: var(--astrocal-text);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dark mode — driven by data-theme attribute on host element */
+:host([data-theme="dark"]) {
+  --astrocal-bg: #0f172a;
+  --astrocal-bg-secondary: #1e293b;
+  --astrocal-bg-hover: #1e293b;
+  --astrocal-text: #f1f5f9;
+  --astrocal-text-secondary: #94a3b8;
+  --astrocal-text-muted: #64748b;
+  --astrocal-border: #334155;
+  --astrocal-shadow: 0 1px 3px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --astrocal-shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.4);
+  --astrocal-success-bg: #064e3b;
+  --astrocal-success-text: #6ee7b7;
+  --astrocal-error-bg: #7f1d1d;
+  --astrocal-error-text: #fca5a5;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+/* ─── Widget Container ─────────────────────────────────────────── */
+
+.astrocal-widget {
+  background: var(--astrocal-bg);
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius-lg);
+  overflow: hidden;
+  max-width: 440px;
+  width: 100%;
+}
+
+.astrocal-widget-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--astrocal-border);
+}
+
+.astrocal-widget-header h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--astrocal-heading, var(--astrocal-text));
+}
+
+.astrocal-widget-header p {
+  color: var(--astrocal-text-secondary);
+  font-size: 13px;
+  margin: 0;
+}
+
+.astrocal-duration {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--astrocal-text-secondary);
+  font-size: 13px;
+  margin-top: 8px;
+}
+
+.astrocal-widget-body {
+  padding: 16px 24px 24px;
+}
+
+/* ─── Loading ──────────────────────────────────────────────────── */
+
+.astrocal-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 24px;
+}
+
+.astrocal-spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--astrocal-border);
+  border-top-color: var(--astrocal-primary);
+  border-radius: 50%;
+  animation: astrocal-spin 0.6s linear infinite;
+}
+
+@keyframes astrocal-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ─── Calendar ─────────────────────────────────────────────────── */
+
+.astrocal-calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 0 12px;
+}
+
+.astrocal-calendar-nav span {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.astrocal-nav-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  color: var(--astrocal-text);
+  font-size: 16px;
+  transition: background-color 0.15s;
+}
+
+.astrocal-nav-btn:hover {
+  background: var(--astrocal-bg-hover);
+}
+
+.astrocal-nav-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.astrocal-calendar-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  text-align: center;
+}
+
+.astrocal-day-header {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--astrocal-text-muted);
+  text-transform: uppercase;
+  padding: 4px 0 8px;
+}
+
+.astrocal-day {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  margin: 0 auto;
+  border-radius: 50%;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 13px;
+  color: var(--astrocal-text);
+  transition: background-color 0.15s;
+}
+
+.astrocal-day:hover:not(:disabled):not(.astrocal-day--selected) {
+  background: var(--astrocal-bg-hover);
+}
+
+.astrocal-day:disabled {
+  color: var(--astrocal-text-muted);
+  cursor: not-allowed;
+}
+
+.astrocal-day--today {
+  font-weight: 700;
+}
+
+.astrocal-day--selected {
+  background: var(--astrocal-primary);
+  color: var(--astrocal-primary-text);
+  font-weight: 600;
+}
+
+.astrocal-day--empty {
+  visibility: hidden;
+}
+
+.astrocal-day:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+}
+
+/* ─── Time Slots ───────────────────────────────────────────────── */
+
+.astrocal-slots-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 0 12px;
+}
+
+.astrocal-slots-back {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  color: var(--astrocal-text);
+  font-size: 14px;
+}
+
+.astrocal-slots-back:hover {
+  background: var(--astrocal-bg-hover);
+}
+
+.astrocal-slots-date {
+  font-weight: 600;
+  font-size: 15px;
+}
+
+.astrocal-slots-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.astrocal-slot {
+  display: block;
+  width: 100%;
+  padding: 10px 16px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--astrocal-primary);
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.astrocal-slot:hover {
+  background: var(--astrocal-bg-hover);
+  border-color: var(--astrocal-primary);
+}
+
+.astrocal-slot:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+}
+
+.astrocal-slots-empty {
+  text-align: center;
+  padding: 24px 0;
+  color: var(--astrocal-text-secondary);
+}
+
+/* ─── Booking Form ─────────────────────────────────────────────── */
+
+.astrocal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.astrocal-form-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-bottom: 4px;
+}
+
+.astrocal-form-summary {
+  font-size: 13px;
+  color: var(--astrocal-text-secondary);
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--astrocal-border);
+  margin-bottom: 4px;
+}
+
+.astrocal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.astrocal-field label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--astrocal-text);
+}
+
+.astrocal-field input,
+.astrocal-field textarea,
+.astrocal-field select {
+  padding: 8px 12px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  font-size: 14px;
+  font-family: var(--astrocal-font);
+  color: var(--astrocal-text);
+  background: var(--astrocal-bg);
+  transition: border-color 0.15s;
+}
+
+.astrocal-field input:focus,
+.astrocal-field textarea:focus,
+.astrocal-field select:focus {
+  outline: none;
+  border-color: var(--astrocal-border-focus);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.astrocal-field textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+.astrocal-field-error {
+  font-size: 12px;
+  color: var(--astrocal-error-text, #dc2626);
+}
+
+.astrocal-submit-btn {
+  padding: 10px 20px;
+  background: var(--astrocal-primary);
+  color: var(--astrocal-primary-text);
+  border: none;
+  border-radius: var(--astrocal-radius);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--astrocal-font);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.astrocal-submit-btn:hover:not(:disabled) {
+  background: var(--astrocal-primary-hover);
+}
+
+.astrocal-submit-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.astrocal-submit-btn:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+}
+
+/* ─── Confirmation ─────────────────────────────────────────────── */
+
+.astrocal-confirmation {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.astrocal-confirmation-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--astrocal-success-bg, #dcfce7);
+  color: var(--astrocal-success-text, #16a34a);
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.astrocal-confirmation h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.astrocal-confirmation p {
+  color: var(--astrocal-text-secondary);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+/* ─── Error Screen ─────────────────────────────────────────────── */
+
+.astrocal-error {
+  text-align: center;
+  padding: 32px 16px;
+}
+
+.astrocal-error-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--astrocal-error-bg, #fee2e2);
+  color: var(--astrocal-error-text, #dc2626);
+  font-size: 24px;
+  margin-bottom: 16px;
+}
+
+.astrocal-error h3 {
+  font-size: 16px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.astrocal-error p {
+  color: var(--astrocal-text-secondary);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.astrocal-retry-btn {
+  padding: 8px 20px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--astrocal-text);
+  font-family: var(--astrocal-font);
+  transition: background-color 0.15s;
+}
+
+.astrocal-retry-btn:hover {
+  background: var(--astrocal-bg-hover);
+}
+
+/* ─── Timezone Select ──────────────────────────────────────────── */
+
+.astrocal-timezone {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 0;
+  font-size: 12px;
+  color: var(--astrocal-text-muted);
+}
+
+.astrocal-timezone select {
+  border: none;
+  background: transparent;
+  font-size: 12px;
+  color: var(--astrocal-text-secondary);
+  cursor: pointer;
+  font-family: var(--astrocal-font);
+  padding: 0;
+}
+
+.astrocal-timezone select:focus {
+  outline: none;
+  color: var(--astrocal-text);
+}
+
+/* ─── Popup Overlay ────────────────────────────────────────────── */
+
+.astrocal-popup-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  animation: astrocal-fade-in 0.2s ease-out;
+}
+
+.astrocal-popup-container {
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  margin: 16px;
+  animation: astrocal-slide-up 0.2s ease-out;
+}
+
+.astrocal-popup-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: var(--astrocal-bg-hover);
+  cursor: pointer;
+  color: var(--astrocal-text-secondary);
+  font-size: 16px;
+  z-index: 1;
+  transition: background-color 0.15s;
+}
+
+.astrocal-popup-close:hover {
+  background: var(--astrocal-border);
+}
+
+@keyframes astrocal-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes astrocal-slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ─── Powered By ───────────────────────────────────────────────── */
+
+.astrocal-powered {
+  text-align: center;
+  padding: 12px 0 4px;
+  font-size: 11px;
+  color: var(--astrocal-text-muted);
+}
+
+.astrocal-powered a {
+  color: var(--astrocal-text-secondary);
+  text-decoration: none;
+}
+
+.astrocal-powered a:hover {
+  text-decoration: underline;
+}
+
+/* ─── Demo Mode ───────────────────────────────────────────────── */
+
+.astrocal-demo-notice {
+  margin-top: 12px;
+  font-size: 11px;
+  color: var(--astrocal-text-muted);
+  font-style: italic;
+}
+
+.astrocal-book-another {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 16px;
+  padding: 8px 20px;
+  border: 1px solid var(--astrocal-primary);
+  border-radius: var(--astrocal-radius);
+  background: transparent;
+  color: var(--astrocal-primary);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--astrocal-font);
+  cursor: pointer;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
+}
+
+.astrocal-book-another:hover {
+  background: var(--astrocal-primary);
+  color: var(--astrocal-primary-text);
+}
+
+/* ─── Mobile Responsive ───────────────────────────────────────── */
+
+@media (max-width: 480px) {
+  .astrocal-widget-header {
+    padding: 16px 16px 12px;
+  }
+
+  .astrocal-widget-body {
+    padding: 12px 16px 16px;
+  }
+
+  .astrocal-popup-container {
+    margin: 8px;
+  }
+
+  .astrocal-field input,
+  .astrocal-field textarea,
+  .astrocal-field select {
+    font-size: 16px; /* prevent iOS zoom on focus */
+  }
+}

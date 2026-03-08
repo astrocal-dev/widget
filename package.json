@@ -1,0 +1,67 @@
+{
+  "name": "@astrocal/widget",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Embeddable booking widget for Astrocal — drop-in scheduling UI for any website or app",
+  "author": "Astrocal",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/astrocal-dev/widget"
+  },
+  "homepage": "https://astrocal.dev",
+  "bugs": {
+    "url": "https://github.com/astrocal-dev/widget/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./cdn": {
+      "import": "./dist/astrocal.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "CHANGELOG.md"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "pnpm build && cp dist/astrocal.js e2e/fixtures/widget.global.js && playwright test",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src/",
+    "prepublishOnly": "pnpm build"
+  },
+  "dependencies": {
+    "preact": "^10.25.4"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.48.2",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/preact": "^3.2.4",
+    "jsdom": "^26.0.0",
+    "serve": "^14.2.4",
+    "tsup": "^8.5.1",
+    "typescript": "^5.9.3",
+    "vitest": "^4.0.18"
+  },
+  "keywords": [
+    "scheduling",
+    "booking",
+    "calendar",
+    "widget",
+    "embed",
+    "astrocal",
+    "appointment"
+  ]
+}
