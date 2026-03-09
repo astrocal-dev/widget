@@ -1,6 +1,6 @@
 {
   "name": "@astrocal/widget",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "description": "Embeddable booking widget for Astrocal — drop-in scheduling UI for any website or app",
   "author": "Astrocal",
