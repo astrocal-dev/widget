@@ -70,7 +70,10 @@ export function Widget({ config }: WidgetProps) {
 
       const { year, month } = parseDateString(date);
       const start = firstDayOfMonthStr(year, month);
-      const end = lastDayOfMonthStr(year, month);
+      // Cap at 30 days from start (API limit) — months with 31 days would exceed it
+      const lastDay = lastDayOfMonthStr(year, month);
+      const day30 = `${year}-${String(month).padStart(2, "0")}-30`;
+      const end = lastDay > day30 ? day30 : lastDay;
 
       setSlotsLoading(true);
       try {
