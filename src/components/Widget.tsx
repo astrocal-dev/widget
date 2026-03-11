@@ -25,10 +25,14 @@ export function Widget({ config }: WidgetProps) {
 
   const api = new ApiClient(config.apiUrl);
 
+  const demoEventType = config.demoEventType
+    ? { ...DEMO_EVENT_TYPE, ...config.demoEventType }
+    : DEMO_EVENT_TYPE;
+
   // Load event type on mount
   useEffect(() => {
     if (config.demo) {
-      setState({ step: "calendar", eventType: DEMO_EVENT_TYPE });
+      setState({ step: "calendar", eventType: demoEventType });
       return;
     }
 
@@ -157,7 +161,7 @@ export function Widget({ config }: WidgetProps) {
   );
 
   const handleReset = useCallback(() => {
-    setState({ step: "calendar", eventType: DEMO_EVENT_TYPE });
+    setState({ step: "calendar", eventType: demoEventType });
     setSelectedDate(null);
   }, []);
 

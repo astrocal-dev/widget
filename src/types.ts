@@ -22,6 +22,8 @@ export interface WidgetConfig {
   onClose?: () => void;
   /** Enable demo mode — uses mock data, no API calls. */
   demo?: boolean;
+  /** Override demo event type fields (title, description, duration, color). Only used when demo is true. */
+  demoEventType?: Partial<Pick<EventType, "title" | "description" | "duration_minutes" | "color">>;
 }
 
 /** Theme customization via CSS custom properties. */
