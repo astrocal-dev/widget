@@ -11,6 +11,7 @@ describe("Confirmation", () => {
     slug: "30-min",
     description: "A quick chat",
     duration_minutes: 30,
+    duration_options: null,
     buffer_before_minutes: 0,
     buffer_after_minutes: 0,
     color: "#3b82f6",
@@ -37,6 +38,16 @@ describe("Confirmation", () => {
     cancel_token: "tok-xyz",
     attendee_count: 1,
     created_at: "2024-01-01T12:00:00Z",
+  };
+
+  const groupBooking: BookingResult = {
+    ...mockBooking,
+    attendee_count: 3,
+    attendees: [
+      { id: "att-1", name: "Alice", email: "alice@test.com", timezone: "America/New_York" },
+      { id: "att-2", name: "Bob", email: "bob@test.com", timezone: "America/New_York" },
+      { id: "att-3", name: "Charlie", email: "charlie@test.com", timezone: "America/New_York" },
+    ],
   };
 
   const defaultProps = {
@@ -107,5 +118,71 @@ describe("Confirmation", () => {
     const checkmark = screen.getByText("✓");
     expect(checkmark).toBeInTheDocument();
     expect(checkmark).toHaveAttribute("aria-hidden", "true");
+  });
+
+  // ─── Group Booking Confirmation ───────────────────────────────────
+
+  describe("group booking confirmation", () => {
+    it("renders single-line attendee display when booking.attendee_count === 1", () => {
+      render(<Confirmation {...defaultProps} />);
+
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.getAllByText(/john@example\.com/).length).toBeGreaterThan(0);
+      expect(screen.queryByText("Attendee 1")).not.toBeInTheDocument();
+    });
+
+    it("renders attendee list when attendee_count > 1 and attendees is present", () => {
+      render(<Confirmation {...defaultProps} booking={groupBooking} />);
+
+      expect(screen.getByText("Attendee 1")).toBeInTheDocument();
+      expect(screen.getByText("Attendee 2")).toBeInTheDocument();
+      expect(screen.getByText("Attendee 3")).toBeInTheDocument();
+    });
+
+    it("attendee list shows correct name and email for each attendee", () => {
+      render(<Confirmation {...defaultProps} booking={groupBooking} />);
+
+      expect(screen.getByText(/Alice/)).toBeInTheDocument();
+      expect(screen.getByText(/alice@test\.com/)).toBeInTheDocument();
+      expect(screen.getByText(/Bob/)).toBeInTheDocument();
+      expect(screen.getByText(/bob@test\.com/)).toBeInTheDocument();
+      expect(screen.getByText(/Charlie/)).toBeInTheDocument();
+      expect(screen.getByText(/charlie@test\.com/)).toBeInTheDocument();
+    });
+
+    it("attendee list labels attendees 'Attendee 1', 'Attendee 2', etc.", () => {
+      render(<Confirmation {...defaultProps} booking={groupBooking} />);
+
+      expect(screen.getByText("Attendee 1")).toBeInTheDocument();
+      expect(screen.getByText("Attendee 2")).toBeInTheDocument();
+      expect(screen.getByText("Attendee 3")).toBeInTheDocument();
+    });
+
+    it("confirmation email notice reads 'Confirmation emails have been sent to all 3 attendees' when attendee_count = 3", () => {
+      render(<Confirmation {...defaultProps} booking={groupBooking} />);
+
+      expect(
+        screen.getByText("Confirmation emails have been sent to all 3 attendees"),
+      ).toBeInTheDocument();
+    });
+
+    it("confirmation email notice is not shown in demo mode", () => {
+      render(<Confirmation {...defaultProps} booking={groupBooking} demo={true} />);
+
+      expect(screen.queryByText(/confirmation email/i)).not.toBeInTheDocument();
+    });
+
+    it("falls back to single-line display when attendee_count > 1 but attendees is undefined", () => {
+      const groupBookingNoAttendees: BookingResult = {
+        ...mockBooking,
+        attendee_count: 3,
+      };
+
+      render(<Confirmation {...defaultProps} booking={groupBookingNoAttendees} />);
+
+      // Should fall back to primary attendee display
+      expect(screen.getByText(/John Doe/)).toBeInTheDocument();
+      expect(screen.queryByText("Attendee 1")).not.toBeInTheDocument();
+    });
   });
 });

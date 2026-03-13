@@ -8,6 +8,7 @@ export const DEMO_EVENT_TYPE: EventType = {
   slug: "30-min-consultation",
   description: "A quick introductory call to discuss your needs.",
   duration_minutes: 30,
+  duration_options: null,
   buffer_before_minutes: 0,
   buffer_after_minutes: 0,
   color: "#2563eb",
@@ -23,24 +24,35 @@ export const DEMO_EVENT_TYPE: EventType = {
 
 /**
  * Generates demo time slots for a given date.
- * Returns 5 half-hour slots from 9:00 AM to 11:00 AM in the specified timezone.
+ * Fills 9:00 AM – 5:00 PM spaced by `durationMinutes`.
  */
-export function generateDemoSlots(date: string, _timezone: string): TimeSlot[] {
-  const hours = [9, 9, 10, 10, 11];
-  const minutes = [0, 30, 0, 30, 0];
+export function generateDemoSlots(
+  date: string,
+  _timezone: string,
+  durationMinutes = 30,
+  bufferBeforeMinutes = 0,
+  bufferAfterMinutes = 0,
+): TimeSlot[] {
+  const slots: TimeSlot[] = [];
+  const startOfDay = 9 * 60; // 9:00 AM in minutes
+  const endOfDay = 17 * 60; // 5:00 PM in minutes
+  const step = durationMinutes + bufferBeforeMinutes + bufferAfterMinutes;
 
-  return hours.map((h, i) => {
-    const startH = String(h).padStart(2, "0");
-    const startM = String(minutes[i]).padStart(2, "0");
-    const endMinTotal = h * 60 + minutes[i]! + 30;
-    const endH = String(Math.floor(endMinTotal / 60)).padStart(2, "0");
-    const endM = String(endMinTotal % 60).padStart(2, "0");
+  for (let i = 0; startOfDay + i * step + durationMinutes <= endOfDay; i++) {
+    const startMin = startOfDay + i * step;
+    const endMin = startMin + durationMinutes;
+    const startH = String(Math.floor(startMin / 60)).padStart(2, "0");
+    const startM = String(startMin % 60).padStart(2, "0");
+    const endH = String(Math.floor(endMin / 60)).padStart(2, "0");
+    const endM = String(endMin % 60).padStart(2, "0");
 
-    return {
+    slots.push({
       start_time: `${date}T${startH}:${startM}:00`,
       end_time: `${date}T${endH}:${endM}:00`,
-    };
-  });
+    });
+  }
+
+  return slots;
 }
 
 /**

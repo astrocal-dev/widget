@@ -10,7 +10,7 @@ vi.mock("./mount", () => ({
   }),
 }));
 
-import { open, close, destroy, autoInit } from "./index";
+import { open, close, destroy, update, autoInit } from "./index";
 import { mountWidget, unmountWidget, resolveTarget } from "./mount";
 
 describe("open()", () => {
@@ -218,12 +218,36 @@ describe("autoInit()", () => {
   });
 });
 
+describe("update()", () => {
+  it("is a no-op when target has no shadow root", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    expect(() => update(el, { eventTypeId: "preview", demo: true })).not.toThrow();
+  });
+
+  it("is a no-op for non-existent selector", () => {
+    expect(() => update("#does-not-exist", { eventTypeId: "test" })).not.toThrow();
+  });
+
+  it("defaults eventTypeId to 'demo' when demo is true and eventTypeId is empty", () => {
+    const el = document.createElement("div");
+    document.body.appendChild(el);
+    const shadow = el.attachShadow({ mode: "open" });
+    shadow.appendChild(document.createElement("div"));
+
+    const config = { eventTypeId: "", demo: true };
+    update(el, config);
+    expect(config.eventTypeId).toBe("demo");
+  });
+});
+
 describe("exports", () => {
-  it("exports open, close, destroy, and autoInit functions", async () => {
+  it("exports open, close, destroy, update, and autoInit functions", async () => {
     const mod = await import("./index");
     expect(typeof mod.open).toBe("function");
     expect(typeof mod.close).toBe("function");
     expect(typeof mod.destroy).toBe("function");
+    expect(typeof mod.update).toBe("function");
     expect(typeof mod.autoInit).toBe("function");
   });
 });

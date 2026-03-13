@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from "vitest";
-import { render, screen } from "@testing-library/preact";
+import { render, screen, fireEvent } from "@testing-library/preact";
 import { Widget } from "./Widget";
 import { DEMO_EVENT_TYPE } from "../utils/demo-data";
 
@@ -87,5 +87,99 @@ describe("Widget demoEventType merge", () => {
 
     expect(screen.getByText("A custom description")).toBeInTheDocument();
     expect(screen.queryByText(DEMO_EVENT_TYPE.description!)).not.toBeInTheDocument();
+  });
+});
+
+describe("Widget duration selector", () => {
+  it("shows duration step when demo event type has 2+ duration_options", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [15, 30, 60] },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Choose a duration")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "15 min" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "30 min" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "60 min" })).toBeInTheDocument();
+    // Calendar should NOT be visible yet
+    expect(screen.queryByTestId("calendar")).not.toBeInTheDocument();
+  });
+
+  it("skips duration step when duration_options is null", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+  });
+
+  it("skips duration step when duration_options has exactly 1 entry", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [45] },
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+    // Header should show the single duration option
+    expect(screen.getByText("45 min")).toBeInTheDocument();
+  });
+
+  it("transitions from duration to calendar when option is selected", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [15, 30, 60] },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "60 min" }));
+
+    // Should now show calendar
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+    // Duration step should be gone
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+    // Header should show selected duration
+    expect(screen.getByText("60 min")).toBeInTheDocument();
+  });
+
+  it("shows event type header on duration step (title + description, no duration badge)", () => {
+    const { container } = render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: {
+            title: "Strategy Session",
+            description: "Let's plan",
+            duration_options: [30, 60],
+          },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Strategy Session")).toBeInTheDocument();
+    expect(screen.getByText("Let's plan")).toBeInTheDocument();
+    // Duration badge in the header should NOT be shown on the duration step
+    expect(container.querySelector(".astrocal-duration")).not.toBeInTheDocument();
   });
 });

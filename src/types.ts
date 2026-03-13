@@ -23,7 +23,18 @@ export interface WidgetConfig {
   /** Enable demo mode — uses mock data, no API calls. */
   demo?: boolean;
   /** Override demo event type fields (title, description, duration, color). Only used when demo is true. */
-  demoEventType?: Partial<Pick<EventType, "title" | "description" | "duration_minutes" | "color">>;
+  demoEventType?: Partial<
+    Pick<
+      EventType,
+      | "title"
+      | "description"
+      | "duration_minutes"
+      | "duration_options"
+      | "buffer_before_minutes"
+      | "buffer_after_minutes"
+      | "color"
+    >
+  >;
 }
 
 /** Theme customization via CSS custom properties. */
@@ -47,6 +58,7 @@ export interface EventType {
   slug: string;
   description: string | null;
   duration_minutes: number;
+  duration_options: number[] | null;
   buffer_before_minutes: number;
   buffer_after_minutes: number;
   color: string;
@@ -66,6 +78,9 @@ export interface TimeSlot {
   end_time: string;
   spots_remaining?: number;
   total_capacity?: number;
+  capped?: boolean;
+  waitlist_available?: boolean;
+  waitlist_position?: number;
 }
 
 /** Availability response from the API. */
@@ -92,6 +107,7 @@ export interface CreateBookingInput {
   invitee_email: string;
   invitee_timezone: string;
   notes?: string;
+  duration?: number;
 }
 
 /** Booking creation request body (multi-attendee). */
@@ -100,6 +116,39 @@ export interface CreateGroupBookingInput {
   start_time: string;
   attendees: AttendeeInput[];
   notes?: string;
+  duration?: number;
+}
+
+/** Waitlist entry creation request body. */
+export interface CreateWaitlistInput {
+  event_type_id: string;
+  invitee_name: string;
+  invitee_email: string;
+  invitee_timezone: string;
+  notes?: string;
+}
+
+/** Waitlist entry result after successful creation. */
+export interface WaitlistResult {
+  id: string;
+  event_type_id: string;
+  status: string;
+  position: number;
+  invitee_name: string;
+  invitee_email: string;
+  invitee_timezone: string;
+  notes: string | null;
+  cancel_token: string;
+  expires_at: string;
+  created_at: string;
+}
+
+/** Individual attendee in a group booking result. */
+export interface AttendeeResult {
+  id: string;
+  name: string;
+  email: string;
+  timezone: string;
 }
 
 /** Booking result after successful creation. */
@@ -115,6 +164,7 @@ export interface BookingResult {
   notes: string | null;
   cancel_token: string;
   attendee_count: number;
+  attendees?: AttendeeResult[];
   created_at: string;
 }
 
@@ -137,7 +187,16 @@ export interface ApiErrorResponse {
 export type WidgetState =
   | { step: "loading" }
   | { step: "error"; error: WidgetError }
-  | { step: "calendar"; eventType: EventType }
-  | { step: "timeslots"; eventType: EventType; date: string; slots: TimeSlot[] }
-  | { step: "form"; eventType: EventType; slot: TimeSlot }
-  | { step: "confirmation"; eventType: EventType; booking: BookingResult };
+  | { step: "duration"; eventType: EventType }
+  | { step: "calendar"; eventType: EventType; selectedDuration: number }
+  | {
+      step: "timeslots";
+      eventType: EventType;
+      date: string;
+      slots: TimeSlot[];
+      selectedDuration: number;
+    }
+  | { step: "form"; eventType: EventType; slot: TimeSlot; selectedDuration: number }
+  | { step: "confirmation"; eventType: EventType; booking: BookingResult }
+  | { step: "waitlist-form"; eventType: EventType; date: string; selectedDuration: number }
+  | { step: "waitlist-confirmation"; eventType: EventType; entry: WaitlistResult };

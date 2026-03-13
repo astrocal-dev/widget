@@ -11,6 +11,7 @@ interface ConfirmationProps {
 
 export function Confirmation({ eventType, booking, timezone, demo, onReset }: ConfirmationProps) {
   const date = booking.start_time.slice(0, 10);
+  const isGroupWithAttendees = booking.attendee_count > 1 && booking.attendees;
 
   return (
     <div class="astrocal-confirmation" role="status">
@@ -24,12 +25,25 @@ export function Confirmation({ eventType, booking, timezone, demo, onReset }: Co
       <p>
         {formatDate(date)} at {formatTime(booking.start_time, timezone)}
       </p>
-      <p>
-        {booking.invitee_name} ({booking.invitee_email})
-      </p>
+      {isGroupWithAttendees ? (
+        <ul class="astrocal-attendee-list">
+          {booking.attendees!.map((a, i) => (
+            <li key={a.id}>
+              <span class="astrocal-attendee-list-label">Attendee {i + 1}</span>
+              {a.name} ({a.email})
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p>
+          {booking.invitee_name} ({booking.invitee_email})
+        </p>
+      )}
       {!demo && (
         <p style={{ marginTop: "12px", fontSize: "13px" }}>
-          A confirmation email has been sent to {booking.invitee_email}
+          {isGroupWithAttendees
+            ? `Confirmation emails have been sent to all ${booking.attendee_count} attendees`
+            : `A confirmation email has been sent to ${booking.invitee_email}`}
         </p>
       )}
       {demo && onReset && (

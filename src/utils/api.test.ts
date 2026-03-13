@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { ApiClient } from "./api";
-import type { EventType, AvailabilityResponse, BookingResult } from "../types";
+import type { EventType, AvailabilityResponse, BookingResult, WaitlistResult } from "../types";
 
 describe("ApiClient", () => {
   let fetchMock: ReturnType<typeof vi.fn>;
@@ -40,6 +40,7 @@ describe("ApiClient", () => {
         slug: "30-min",
         description: "A quick chat",
         duration_minutes: 30,
+        duration_options: null,
         buffer_before_minutes: 0,
         buffer_after_minutes: 0,
         color: "#3b82f6",
@@ -85,6 +86,48 @@ describe("ApiClient", () => {
   });
 
   describe("getAvailability", () => {
+    it("does not append duration param when not provided", async () => {
+      const mockAvailability: AvailabilityResponse = {
+        event_type_id: "evt-123",
+        timezone: "America/New_York",
+        start: "2024-01-01",
+        end: "2024-01-31",
+        slots: [],
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockAvailability,
+      });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      await client.getAvailability("evt-123", "2024-01-01", "2024-01-31", "America/New_York");
+
+      const calledUrl = fetchMock.mock.calls[0]![0] as string;
+      expect(calledUrl).not.toContain("duration=");
+    });
+
+    it("appends duration param when provided", async () => {
+      const mockAvailability: AvailabilityResponse = {
+        event_type_id: "evt-123",
+        timezone: "America/New_York",
+        start: "2024-01-01",
+        end: "2024-01-31",
+        slots: [],
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockAvailability,
+      });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      await client.getAvailability("evt-123", "2024-01-01", "2024-01-31", "America/New_York", 60);
+
+      const calledUrl = fetchMock.mock.calls[0]![0] as string;
+      expect(calledUrl).toContain("duration=60");
+    });
+
     it("builds correct query params", async () => {
       const mockAvailability: AvailabilityResponse = {
         event_type_id: "evt-123",
@@ -160,6 +203,79 @@ describe("ApiClient", () => {
       expect(result).toEqual(mockBooking);
     });
 
+    it("includes duration in POST body when provided", async () => {
+      const mockBooking: BookingResult = {
+        id: "bkg-123",
+        event_type_id: "evt-123",
+        status: "confirmed",
+        start_time: "2024-01-15T14:00:00Z",
+        end_time: "2024-01-15T15:00:00Z",
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+        notes: null,
+        cancel_token: "tok-xyz",
+        attendee_count: 1,
+        created_at: "2024-01-01T12:00:00Z",
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockBooking,
+      });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      const input = {
+        event_type_id: "evt-123",
+        start_time: "2024-01-15T14:00:00Z",
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+        duration: 60,
+      };
+
+      await client.createBooking(input);
+
+      const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+      expect(body.duration).toBe(60);
+    });
+
+    it("omits duration from POST body when not provided", async () => {
+      const mockBooking: BookingResult = {
+        id: "bkg-123",
+        event_type_id: "evt-123",
+        status: "confirmed",
+        start_time: "2024-01-15T14:00:00Z",
+        end_time: "2024-01-15T14:30:00Z",
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+        notes: null,
+        cancel_token: "tok-xyz",
+        attendee_count: 1,
+        created_at: "2024-01-01T12:00:00Z",
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockBooking,
+      });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      const input = {
+        event_type_id: "evt-123",
+        start_time: "2024-01-15T14:00:00Z",
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+      };
+
+      await client.createBooking(input);
+
+      const body = JSON.parse(fetchMock.mock.calls[0]![1].body as string);
+      expect(body.duration).toBeUndefined();
+    });
+
     it("returns 409 WidgetError with code slot_unavailable", async () => {
       fetchMock.mockResolvedValueOnce({
         ok: false,
@@ -227,6 +343,94 @@ describe("ApiClient", () => {
       await expect(client.createBooking(input)).rejects.toEqual({
         code: "validation_error",
         message: "Missing required field",
+      });
+    });
+  });
+
+  describe("createWaitlistEntry", () => {
+    it("sends POST to /v1/waitlist with correct body", async () => {
+      const mockEntry: WaitlistResult = {
+        id: "wl-123",
+        event_type_id: "evt-123",
+        status: "waiting",
+        position: 3,
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+        notes: null,
+        cancel_token: "tok-xyz",
+        expires_at: "2024-02-15T00:00:00Z",
+        created_at: "2024-01-15T12:00:00Z",
+      };
+
+      fetchMock.mockResolvedValueOnce({
+        ok: true,
+        json: async () => mockEntry,
+      });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      const input = {
+        event_type_id: "evt-123",
+        invitee_name: "John Doe",
+        invitee_email: "john@example.com",
+        invitee_timezone: "America/New_York",
+      };
+
+      const result = await client.createWaitlistEntry(input);
+
+      expect(fetchMock).toHaveBeenCalledWith("https://api.astrocal.dev/v1/waitlist", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(input),
+      });
+      expect(result).toEqual(mockEntry);
+    });
+
+    it("throws WidgetError with validation_error code on 400", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: async () => ({
+          error: { code: "validation_error", message: "Invalid email format" },
+        }),
+      });
+
+      const client = new ApiClient();
+
+      await expect(
+        client.createWaitlistEntry({
+          event_type_id: "evt-123",
+          invitee_name: "John Doe",
+          invitee_email: "invalid",
+          invitee_timezone: "America/New_York",
+        }),
+      ).rejects.toEqual({
+        code: "validation_error",
+        message: "Invalid email format",
+      });
+    });
+
+    it("throws WidgetError with slot_unavailable code on 409", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({
+          error: { code: "conflict", message: "Waitlist full" },
+        }),
+      });
+
+      const client = new ApiClient();
+
+      await expect(
+        client.createWaitlistEntry({
+          event_type_id: "evt-123",
+          invitee_name: "John Doe",
+          invitee_email: "john@example.com",
+          invitee_timezone: "America/New_York",
+        }),
+      ).rejects.toEqual({
+        code: "slot_unavailable",
+        message: "This time slot is no longer available",
       });
     });
   });

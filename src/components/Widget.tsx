@@ -1,5 +1,12 @@
 import { useState, useEffect, useCallback } from "preact/hooks";
-import type { WidgetConfig, WidgetState, TimeSlot, WidgetError, AttendeeInput } from "../types";
+import type {
+  WidgetConfig,
+  WidgetState,
+  EventType,
+  TimeSlot,
+  WidgetError,
+  AttendeeInput,
+} from "../types";
 import { ApiClient } from "../utils/api";
 import { DEMO_EVENT_TYPE, generateDemoSlots, createDemoBooking } from "../utils/demo-data";
 import { detectTimezone } from "../utils/timezone";
@@ -8,11 +15,25 @@ import { Calendar } from "./Calendar";
 import { TimeSlots } from "./TimeSlots";
 import { BookingForm } from "./BookingForm";
 import { Confirmation } from "./Confirmation";
+import { WaitlistForm } from "./WaitlistForm";
+import { WaitlistConfirmation } from "./WaitlistConfirmation";
 import { ErrorScreen } from "./ErrorScreen";
 import { TimezoneSelect } from "./TimezoneSelect";
+import { DurationSelector } from "./DurationSelector";
 
 interface WidgetProps {
   config: WidgetConfig;
+}
+
+/** Resolves the initial state after loading an event type. */
+function resolveLoadedState(eventType: EventType): WidgetState {
+  const options = eventType.duration_options;
+  if (options && options.length >= 2) {
+    return { step: "duration", eventType };
+  }
+  const selectedDuration =
+    options && options.length === 1 ? options[0]! : eventType.duration_minutes;
+  return { step: "calendar", eventType, selectedDuration };
 }
 
 export function Widget({ config }: WidgetProps) {
@@ -22,6 +43,7 @@ export function Widget({ config }: WidgetProps) {
   const [slotsLoading, setSlotsLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<WidgetError | null>(null);
+  const [waitlistAvailableForDate, setWaitlistAvailableForDate] = useState(false);
 
   const api = new ApiClient(config.apiUrl);
 
@@ -32,7 +54,7 @@ export function Widget({ config }: WidgetProps) {
   // Load event type on mount
   useEffect(() => {
     if (config.demo) {
-      setState({ step: "calendar", eventType: demoEventType });
+      setState(resolveLoadedState(demoEventType));
       return;
     }
 
@@ -42,7 +64,7 @@ export function Widget({ config }: WidgetProps) {
       try {
         const eventType = await api.getEventType(config.eventTypeId);
         if (!cancelled) {
-          setState({ step: "calendar", eventType });
+          setState(resolveLoadedState(eventType));
         }
       } catch (err) {
         if (!cancelled) {
@@ -59,16 +81,59 @@ export function Widget({ config }: WidgetProps) {
     };
   }, [config.eventTypeId, config.apiUrl]);
 
+  // Update event type in-place when demo config changes (preserves current step)
+  // When duration changes and we're viewing timeslots, regenerate them too.
+  useEffect(() => {
+    if (!config.demo) return;
+    setState((prev) => {
+      if (prev.step === "loading" || prev.step === "error") return prev;
+      if (prev.step === "timeslots") {
+        const duration = prev.selectedDuration;
+        const slots = generateDemoSlots(
+          prev.date,
+          timezone,
+          duration,
+          demoEventType.buffer_before_minutes,
+          demoEventType.buffer_after_minutes,
+        );
+        return { ...prev, eventType: demoEventType, slots };
+      }
+      return { ...prev, eventType: demoEventType };
+    });
+  }, [
+    config.demoEventType?.title,
+    config.demoEventType?.description,
+    config.demoEventType?.duration_minutes,
+    config.demoEventType?.duration_options,
+    config.demoEventType?.buffer_before_minutes,
+    config.demoEventType?.buffer_after_minutes,
+    config.demoEventType?.color,
+  ]);
+
   // Fetch slots when date changes
   const fetchSlots = useCallback(
     async (date: string) => {
-      if (state.step !== "calendar" && state.step !== "timeslots" && state.step !== "form") return;
+      if (
+        state.step !== "calendar" &&
+        state.step !== "timeslots" &&
+        state.step !== "form" &&
+        state.step !== "waitlist-form"
+      )
+        return;
 
       const eventType = state.eventType;
+      const selectedDuration = state.selectedDuration;
 
       if (config.demo) {
-        const demoSlots = generateDemoSlots(date, timezone);
-        setState({ step: "timeslots", eventType, date, slots: demoSlots });
+        const demoSlots = generateDemoSlots(
+          date,
+          timezone,
+          selectedDuration,
+          eventType.buffer_before_minutes,
+          eventType.buffer_after_minutes,
+        );
+        setWaitlistAvailableForDate(false);
+        setState({ step: "timeslots", eventType, date, slots: demoSlots, selectedDuration });
         return;
       }
 
@@ -81,10 +146,26 @@ export function Widget({ config }: WidgetProps) {
 
       setSlotsLoading(true);
       try {
-        const availability = await api.getAvailability(eventType.id, start, end, timezone);
+        const duration =
+          selectedDuration !== eventType.duration_minutes ? selectedDuration : undefined;
+        const availability = await api.getAvailability(
+          eventType.id,
+          start,
+          end,
+          timezone,
+          duration,
+        );
         // Filter slots for the selected date
         const dateSlots = availability.slots.filter((s) => s.start_time.startsWith(date));
-        setState({ step: "timeslots", eventType, date, slots: dateSlots });
+        // Compute waitlist availability: all slots capped, at least one waitlist-available
+        const hasWaitlist =
+          dateSlots.length > 0 &&
+          dateSlots.every((s) => s.capped) &&
+          dateSlots.some((s) => s.waitlist_available);
+        setWaitlistAvailableForDate(hasWaitlist);
+        // Show available (non-capped) slots; if all are capped, show empty with waitlist option
+        const availableSlots = dateSlots.filter((s) => !s.capped);
+        setState({ step: "timeslots", eventType, date, slots: availableSlots, selectedDuration });
       } catch (err) {
         const error = err as WidgetError;
         setState({ step: "error", error });
@@ -105,11 +186,25 @@ export function Widget({ config }: WidgetProps) {
     [fetchSlots],
   );
 
+  const handleDurationSelect = useCallback(
+    (duration: number) => {
+      if (state.step === "duration") {
+        setState({ step: "calendar", eventType: state.eventType, selectedDuration: duration });
+      }
+    },
+    [state],
+  );
+
   const handleSlotSelect = useCallback(
     (slot: TimeSlot) => {
       if (state.step === "timeslots") {
         setSubmitError(null);
-        setState({ step: "form", eventType: state.eventType, slot });
+        setState({
+          step: "form",
+          eventType: state.eventType,
+          slot,
+          selectedDuration: state.selectedDuration,
+        });
       }
     },
     [state],
@@ -128,6 +223,11 @@ export function Widget({ config }: WidgetProps) {
       setSubmitting(true);
       setSubmitError(null);
 
+      const duration =
+        state.selectedDuration !== state.eventType.duration_minutes
+          ? state.selectedDuration
+          : undefined;
+
       try {
         // Use multi-attendee format for group bookings
         const booking =
@@ -137,6 +237,7 @@ export function Widget({ config }: WidgetProps) {
                 start_time: state.slot.start_time,
                 attendees: data.attendees,
                 notes: data.notes || undefined,
+                duration,
               })
             : await api.createBooking({
                 event_type_id: state.eventType.id,
@@ -145,6 +246,7 @@ export function Widget({ config }: WidgetProps) {
                 invitee_email: data.email,
                 invitee_timezone: timezone,
                 notes: data.notes || undefined,
+                duration,
               });
         setState({ step: "confirmation", eventType: state.eventType, booking });
         config.onBookingCreated?.(booking);
@@ -161,13 +263,22 @@ export function Widget({ config }: WidgetProps) {
   );
 
   const handleReset = useCallback(() => {
-    setState({ step: "calendar", eventType: demoEventType });
+    setState(resolveLoadedState(demoEventType));
     setSelectedDate(null);
   }, []);
 
   const handleBackToCalendar = useCallback(() => {
     if (state.step === "timeslots" || state.step === "form") {
-      setState({ step: "calendar", eventType: state.eventType });
+      const options = state.eventType.duration_options;
+      if (options && options.length >= 2) {
+        setState({ step: "duration", eventType: state.eventType });
+      } else {
+        setState({
+          step: "calendar",
+          eventType: state.eventType,
+          selectedDuration: state.selectedDuration,
+        });
+      }
       setSelectedDate(null);
     }
   }, [state]);
@@ -178,13 +289,57 @@ export function Widget({ config }: WidgetProps) {
     }
   }, [state, selectedDate, fetchSlots]);
 
+  const handleWaitlistSelect = useCallback(() => {
+    if (state.step === "timeslots") {
+      setSubmitError(null);
+      setState({
+        step: "waitlist-form",
+        eventType: state.eventType,
+        date: state.date,
+        selectedDuration: state.selectedDuration,
+      });
+    }
+  }, [state]);
+
+  const handleWaitlistSubmit = useCallback(
+    async (data: { name: string; email: string; notes: string }) => {
+      if (state.step !== "waitlist-form") return;
+
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const entry = await api.createWaitlistEntry({
+          event_type_id: state.eventType.id,
+          invitee_name: data.name,
+          invitee_email: data.email,
+          invitee_timezone: timezone,
+          notes: data.notes || undefined,
+        });
+        setState({ step: "waitlist-confirmation", eventType: state.eventType, entry });
+      } catch (err) {
+        const error = err as WidgetError;
+        setSubmitError(error);
+        config.onError?.(error);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [state, timezone],
+  );
+
+  const handleBackFromWaitlistForm = useCallback(() => {
+    if (state.step === "waitlist-form" && selectedDate) {
+      fetchSlots(selectedDate);
+    }
+  }, [state, selectedDate, fetchSlots]);
+
   const handleRetry = useCallback(() => {
     setState({ step: "loading" });
     // Re-trigger loading effect by resetting
     (async () => {
       try {
         const eventType = await api.getEventType(config.eventTypeId);
-        setState({ step: "calendar", eventType });
+        setState(resolveLoadedState(eventType));
       } catch (err) {
         const error = err as WidgetError;
         setState({ step: "error", error });
@@ -213,12 +368,21 @@ export function Widget({ config }: WidgetProps) {
 
   return (
     <div class="astrocal-widget">
-      {/* Header - shown for calendar, timeslots, and form states */}
-      {(state.step === "calendar" || state.step === "timeslots" || state.step === "form") && (
+      {/* Header - shown for duration, calendar, timeslots, form, and waitlist states */}
+      {(state.step === "duration" ||
+        state.step === "calendar" ||
+        state.step === "timeslots" ||
+        state.step === "form" ||
+        state.step === "waitlist-form" ||
+        state.step === "waitlist-confirmation") && (
         <div class="astrocal-widget-header">
           <h2>{state.eventType.title}</h2>
           {state.eventType.description && <p>{state.eventType.description}</p>}
-          <div class="astrocal-duration">{state.eventType.duration_minutes} min</div>
+          {state.step !== "duration" &&
+            state.step !== "waitlist-form" &&
+            state.step !== "waitlist-confirmation" && (
+              <div class="astrocal-duration">{state.selectedDuration} min</div>
+            )}
         </div>
       )}
 
@@ -230,6 +394,10 @@ export function Widget({ config }: WidgetProps) {
         )}
 
         {state.step === "error" && <ErrorScreen error={state.error} onRetry={handleRetry} />}
+
+        {state.step === "duration" && (
+          <DurationSelector eventType={state.eventType} onSelect={handleDurationSelect} />
+        )}
 
         {state.step === "calendar" && (
           <>
@@ -251,6 +419,8 @@ export function Widget({ config }: WidgetProps) {
               loading={slotsLoading}
               onSlotSelect={handleSlotSelect}
               onBack={handleBackToCalendar}
+              waitlistAvailable={waitlistAvailableForDate}
+              onWaitlistSelect={handleWaitlistSelect}
             />
             <TimezoneSelect value={timezone} onChange={handleTimezoneChange} />
           </>
@@ -275,6 +445,26 @@ export function Widget({ config }: WidgetProps) {
             timezone={timezone}
             demo={config.demo}
             onReset={handleReset}
+          />
+        )}
+
+        {state.step === "waitlist-form" && (
+          <WaitlistForm
+            eventType={state.eventType}
+            date={state.date}
+            timezone={timezone}
+            submitting={submitting}
+            error={submitError}
+            onSubmit={handleWaitlistSubmit}
+            onBack={handleBackFromWaitlistForm}
+          />
+        )}
+
+        {state.step === "waitlist-confirmation" && (
+          <WaitlistConfirmation
+            eventType={state.eventType}
+            entry={state.entry}
+            timezone={timezone}
           />
         )}
       </div>

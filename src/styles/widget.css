@@ -32,7 +32,7 @@
 
   display: block;
   max-width: 100%;
-  overflow: hidden;
+  overflow: clip;
   font-family: var(--astrocal-font);
   font-size: var(--astrocal-font-size);
   color: var(--astrocal-text);
@@ -66,12 +66,15 @@
 /* ─── Widget Container ─────────────────────────────────────────── */
 
 .astrocal-widget {
+  display: flex;
+  flex-direction: column;
   background: var(--astrocal-bg);
   border: 1px solid var(--astrocal-border);
   border-radius: var(--astrocal-radius-lg);
-  overflow: hidden;
+  overflow: clip;
   max-width: 440px;
   width: 100%;
+  height: 540px;
 }
 
 .astrocal-widget-header {
@@ -103,6 +106,57 @@
 
 .astrocal-widget-body {
   padding: 16px 24px 24px;
+}
+
+/* ─── Duration Selector ────────────────────────────────────────── */
+
+.astrocal-duration-selector {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 24px 0;
+}
+
+.astrocal-duration-selector h3 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--astrocal-text-secondary);
+  margin-bottom: 16px;
+}
+
+.astrocal-duration-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.astrocal-duration-option {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--astrocal-primary);
+  font-family: var(--astrocal-font);
+  transition:
+    background-color 0.15s,
+    border-color 0.15s;
+}
+
+.astrocal-duration-option:hover {
+  background: var(--astrocal-bg-hover);
+  border-color: var(--astrocal-primary);
+}
+
+.astrocal-duration-option:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
 }
 
 /* ─── Loading ──────────────────────────────────────────────────── */
@@ -263,7 +317,38 @@
   flex-direction: column;
   gap: 8px;
   max-height: 300px;
-  overflow-y: auto;
+  overflow-y: scroll;
+  padding-bottom: 8px;
+  transition:
+    mask-image 150ms ease,
+    -webkit-mask-image 150ms ease;
+}
+
+.astrocal-slots-list.astrocal-slots-can-scroll-down {
+  -webkit-mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to bottom, black calc(100% - 40px), transparent);
+}
+
+.astrocal-slots-list.astrocal-slots-can-scroll-up {
+  -webkit-mask-image: linear-gradient(to top, black calc(100% - 40px), transparent);
+  mask-image: linear-gradient(to top, black calc(100% - 40px), transparent);
+}
+
+.astrocal-slots-list.astrocal-slots-can-scroll-up.astrocal-slots-can-scroll-down {
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 40px,
+    black calc(100% - 40px),
+    transparent
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    transparent,
+    black 40px,
+    black calc(100% - 40px),
+    transparent
+  );
 }
 
 .astrocal-slot {
@@ -297,6 +382,34 @@
   text-align: center;
   padding: 24px 0;
   color: var(--astrocal-text-secondary);
+}
+
+/* ─── Waitlist Button ──────────────────────────────────────────── */
+
+.astrocal-waitlist-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 12px;
+  padding: 10px 20px;
+  background: var(--astrocal-primary);
+  color: var(--astrocal-primary-text);
+  border: none;
+  border-radius: var(--astrocal-radius);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--astrocal-font);
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.astrocal-waitlist-btn:hover {
+  background: var(--astrocal-primary-hover);
+}
+
+.astrocal-waitlist-btn:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
 }
 
 /* ─── Booking Form ─────────────────────────────────────────────── */
@@ -392,6 +505,65 @@
   outline-offset: 2px;
 }
 
+/* ─── Attendee Count Stepper ──────────────────────────────────── */
+
+.astrocal-attendee-count {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg-secondary);
+}
+
+.astrocal-attendee-count label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--astrocal-text);
+}
+
+.astrocal-stepper {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.astrocal-stepper button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+  background: var(--astrocal-bg);
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--astrocal-text);
+  font-family: var(--astrocal-font);
+  transition: background-color 0.15s;
+}
+
+.astrocal-stepper button:hover:not(:disabled) {
+  background: var(--astrocal-bg-hover);
+  border-color: var(--astrocal-primary);
+}
+
+.astrocal-stepper button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.astrocal-stepper span {
+  min-width: 20px;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--astrocal-text);
+}
+
 /* ─── Confirmation ─────────────────────────────────────────────── */
 
 .astrocal-confirmation {
@@ -422,6 +594,31 @@
   color: var(--astrocal-text-secondary);
   font-size: 14px;
   margin-bottom: 4px;
+}
+
+/* ─── Attendee List (Confirmation) ────────────────────────────── */
+
+.astrocal-attendee-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0;
+  text-align: left;
+}
+
+.astrocal-attendee-list li {
+  padding: 6px 0;
+  font-size: 14px;
+  color: var(--astrocal-text-secondary);
+}
+
+.astrocal-attendee-list-label {
+  display: block;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--astrocal-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  margin-bottom: 2px;
 }
 
 /* ─── Error Screen ─────────────────────────────────────────────── */

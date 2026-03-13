@@ -40,27 +40,45 @@ export function BookingForm({
     slot.spots_remaining ?? eventType.max_attendees,
   );
 
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
+  const [attendeeCount, setAttendeeCount] = useState(1);
+  const [attendees, setAttendees] = useState<AttendeeInput[]>([{ name: "", email: "" }]);
   const [notes, setNotes] = useState("");
-  const [additionalAttendees, setAdditionalAttendees] = useState<AttendeeInput[]>([]);
   const [errors, setErrors] = useState<FormErrors>({});
+
+  function handleCountChange(newCount: number) {
+    const capped = Math.min(Math.max(1, newCount), maxAttendees);
+    setAttendeeCount(capped);
+    setAttendees((prev) => {
+      if (capped > prev.length) {
+        return [...prev, ...Array(capped - prev.length).fill({ name: "", email: "" })];
+      }
+      return prev.slice(0, capped);
+    });
+  }
+
+  function updateAttendee(index: number, field: "name" | "email", value: string) {
+    setAttendees((prev) => prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)));
+  }
 
   const validate = useCallback((): FormErrors => {
     const errs: FormErrors = {};
-    if (!name.trim()) {
+    const primary = attendees[0]!;
+
+    // Validate primary attendee (index 0) — maps to top-level name/email errors
+    if (!primary.name.trim()) {
       errs.name = "Name is required";
     }
-    if (!email.trim()) {
+    if (!primary.email.trim()) {
       errs.email = "Email is required";
-    } else if (!EMAIL_REGEX.test(email)) {
+    } else if (!EMAIL_REGEX.test(primary.email)) {
       errs.email = "Please enter a valid email address";
     }
 
-    if (isGroup && additionalAttendees.length > 0) {
+    // Validate additional attendees (index 1+)
+    if (isGroup && attendeeCount > 1) {
       const attendeeErrors: Record<number, { name?: string; email?: string }> = {};
-      for (let i = 0; i < additionalAttendees.length; i++) {
-        const attendee = additionalAttendees[i]!;
+      for (let i = 1; i < attendeeCount; i++) {
+        const attendee = attendees[i]!;
         const fieldErrors: { name?: string; email?: string } = {};
         if (!attendee.name.trim()) fieldErrors.name = "Name is required";
         if (!attendee.email.trim()) {
@@ -73,8 +91,32 @@ export function BookingForm({
       if (Object.keys(attendeeErrors).length > 0) errs.attendees = attendeeErrors;
     }
 
+    // Duplicate email check (case-insensitive) across all attendees
+    if (isGroup && attendeeCount > 1) {
+      const emails = attendees
+        .slice(0, attendeeCount)
+        .map((a) => a.email.trim().toLowerCase())
+        .filter(Boolean);
+      const seen = new Set<string>();
+      const duplicates = new Set<string>();
+      for (const email of emails) {
+        if (seen.has(email)) duplicates.add(email);
+        seen.add(email);
+      }
+      if (duplicates.size > 0) {
+        for (let i = 0; i < attendeeCount; i++) {
+          if (duplicates.has(attendees[i]!.email.trim().toLowerCase())) {
+            errs.attendees ??= {};
+            errs.attendees[i] ??= {};
+            errs.attendees[i]!.email =
+              "Duplicate email — each attendee must have a unique email address";
+          }
+        }
+      }
+    }
+
     return errs;
-  }, [name, email, isGroup, additionalAttendees]);
+  }, [attendees, attendeeCount, isGroup]);
 
   const handleSubmit = useCallback(
     (e: Event) => {
@@ -82,47 +124,28 @@ export function BookingForm({
       const errs = validate();
       setErrors(errs);
       if (Object.keys(errs).length === 0) {
+        const primary = attendees[0]!;
         if (isGroup) {
-          const allAttendees: AttendeeInput[] = [
-            { name: name.trim(), email: email.trim(), timezone },
-            ...additionalAttendees.map((a) => ({
-              name: a.name.trim(),
-              email: a.email.trim(),
-              timezone: a.timezone || timezone,
-            })),
-          ];
+          const allAttendees: AttendeeInput[] = attendees.slice(0, attendeeCount).map((a) => ({
+            name: a.name.trim(),
+            email: a.email.trim(),
+            timezone: a.timezone || timezone,
+          }));
           onSubmit({
-            name: name.trim(),
-            email: email.trim(),
+            name: primary.name.trim(),
+            email: primary.email.trim(),
             notes: notes.trim(),
             attendees: allAttendees,
           });
         } else {
-          onSubmit({ name: name.trim(), email: email.trim(), notes: notes.trim() });
+          onSubmit({ name: primary.name.trim(), email: primary.email.trim(), notes: notes.trim() });
         }
       }
     },
-    [name, email, notes, timezone, isGroup, additionalAttendees, validate, onSubmit],
+    [attendees, attendeeCount, notes, timezone, isGroup, validate, onSubmit],
   );
 
-  function addAttendee() {
-    if (1 + additionalAttendees.length < maxAttendees) {
-      setAdditionalAttendees((prev) => [...prev, { name: "", email: "" }]);
-    }
-  }
-
-  function removeAttendee(index: number) {
-    setAdditionalAttendees((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  function updateAttendee(index: number, field: "name" | "email", value: string) {
-    setAdditionalAttendees((prev) =>
-      prev.map((a, i) => (i === index ? { ...a, [field]: value } : a)),
-    );
-  }
-
   const date = slot.start_time.slice(0, 10);
-  const canAddMore = 1 + additionalAttendees.length < maxAttendees;
 
   return (
     <form class="astrocal-form" onSubmit={handleSubmit} noValidate>
@@ -146,7 +169,8 @@ export function BookingForm({
           <>
             <br />
             <span class="astrocal-group-info">
-              Group booking &middot; up to {maxAttendees} attendees
+              Group booking &middot;{" "}
+              {attendeeCount > 1 ? `${attendeeCount} attendees` : "1 attendee"}
             </span>
           </>
         )}
@@ -158,66 +182,95 @@ export function BookingForm({
         </div>
       )}
 
-      <div class="astrocal-field">
-        <label for="astrocal-name">Name *</label>
-        <input
-          id="astrocal-name"
-          type="text"
-          value={name}
-          onInput={(e) => setName((e.target as HTMLInputElement).value)}
-          placeholder="Your name"
-          required
-          aria-invalid={!!errors.name}
-          aria-describedby={errors.name ? "astrocal-name-error" : undefined}
-        />
-        {errors.name && (
-          <span id="astrocal-name-error" class="astrocal-field-error">
-            {errors.name}
-          </span>
+      {/* Attendee count stepper for group event types */}
+      {isGroup && (
+        <div class="astrocal-attendee-count">
+          <label>How many attendees?</label>
+          <div class="astrocal-stepper">
+            <button
+              type="button"
+              onClick={() => handleCountChange(attendeeCount - 1)}
+              disabled={attendeeCount <= 1}
+              aria-label="Decrease attendee count"
+            >
+              &minus;
+            </button>
+            <span aria-live="polite">{attendeeCount}</span>
+            <button
+              type="button"
+              onClick={() => handleCountChange(attendeeCount + 1)}
+              disabled={attendeeCount >= maxAttendees}
+              aria-label="Increase attendee count"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Primary attendee (index 0) */}
+      <div class="astrocal-attendee-row">
+        {isGroup && attendeeCount > 1 && (
+          <div class="astrocal-attendee-header">
+            <span class="astrocal-attendee-label">You (Attendee 1)</span>
+          </div>
         )}
+        <div class="astrocal-field">
+          <label for="astrocal-name">Name *</label>
+          <input
+            id="astrocal-name"
+            type="text"
+            value={attendees[0]?.name ?? ""}
+            onInput={(e) => updateAttendee(0, "name", (e.target as HTMLInputElement).value)}
+            placeholder="Your name"
+            required
+            aria-invalid={!!errors.name || !!errors.attendees?.[0]?.name}
+            aria-describedby={errors.name ? "astrocal-name-error" : undefined}
+          />
+          {errors.name && (
+            <span id="astrocal-name-error" class="astrocal-field-error">
+              {errors.name}
+            </span>
+          )}
+        </div>
+
+        <div class="astrocal-field">
+          <label for="astrocal-email">Email *</label>
+          <input
+            id="astrocal-email"
+            type="email"
+            value={attendees[0]?.email ?? ""}
+            onInput={(e) => updateAttendee(0, "email", (e.target as HTMLInputElement).value)}
+            placeholder="you@example.com"
+            required
+            aria-invalid={!!errors.email || !!errors.attendees?.[0]?.email}
+            aria-describedby={errors.email ? "astrocal-email-error" : undefined}
+          />
+          {errors.email && (
+            <span id="astrocal-email-error" class="astrocal-field-error">
+              {errors.email}
+            </span>
+          )}
+          {errors.attendees?.[0]?.email && !errors.email && (
+            <span class="astrocal-field-error">{errors.attendees[0].email}</span>
+          )}
+        </div>
       </div>
 
-      <div class="astrocal-field">
-        <label for="astrocal-email">Email *</label>
-        <input
-          id="astrocal-email"
-          type="email"
-          value={email}
-          onInput={(e) => setEmail((e.target as HTMLInputElement).value)}
-          placeholder="you@example.com"
-          required
-          aria-invalid={!!errors.email}
-          aria-describedby={errors.email ? "astrocal-email-error" : undefined}
-        />
-        {errors.email && (
-          <span id="astrocal-email-error" class="astrocal-field-error">
-            {errors.email}
-          </span>
-        )}
-      </div>
-
-      {/* Additional attendees for group bookings */}
+      {/* Additional attendees (index 1+) */}
       {isGroup &&
-        additionalAttendees.map((attendee, index) => (
+        Array.from({ length: attendeeCount - 1 }, (_, i) => i + 1).map((index) => (
           <div key={index} class="astrocal-attendee-row">
             <div class="astrocal-attendee-header">
-              <span class="astrocal-attendee-label">Attendee {index + 2}</span>
-              <button
-                type="button"
-                class="astrocal-attendee-remove"
-                onClick={() => removeAttendee(index)}
-                aria-label={`Remove attendee ${index + 2}`}
-              >
-                &times;
-              </button>
+              <span class="astrocal-attendee-label">Attendee {index + 1}</span>
             </div>
             <div class="astrocal-field">
               <input
                 type="text"
-                value={attendee.name}
+                value={attendees[index]?.name ?? ""}
                 onInput={(e) => updateAttendee(index, "name", (e.target as HTMLInputElement).value)}
                 placeholder="Name"
-                aria-label={`Attendee ${index + 2} name`}
+                aria-label={`Attendee ${index + 1} name`}
                 aria-invalid={!!errors.attendees?.[index]?.name}
               />
               {errors.attendees?.[index]?.name && (
@@ -227,12 +280,12 @@ export function BookingForm({
             <div class="astrocal-field">
               <input
                 type="email"
-                value={attendee.email}
+                value={attendees[index]?.email ?? ""}
                 onInput={(e) =>
                   updateAttendee(index, "email", (e.target as HTMLInputElement).value)
                 }
                 placeholder="Email"
-                aria-label={`Attendee ${index + 2} email`}
+                aria-label={`Attendee ${index + 1} email`}
                 aria-invalid={!!errors.attendees?.[index]?.email}
               />
               {errors.attendees?.[index]?.email && (
@@ -241,12 +294,6 @@ export function BookingForm({
             </div>
           </div>
         ))}
-
-      {isGroup && canAddMore && (
-        <button type="button" class="astrocal-add-attendee-btn" onClick={addAttendee}>
-          + Add attendee
-        </button>
-      )}
 
       <div class="astrocal-field">
         <label for="astrocal-notes">Notes (optional)</label>

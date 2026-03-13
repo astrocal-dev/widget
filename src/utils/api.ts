@@ -4,6 +4,8 @@ import type {
   CreateBookingInput,
   CreateGroupBookingInput,
   BookingResult,
+  CreateWaitlistInput,
+  WaitlistResult,
   ApiErrorResponse,
   WidgetError,
 } from "../types";
@@ -29,6 +31,7 @@ export class ApiClient {
     start: string,
     end: string,
     timezone: string,
+    duration?: number,
   ): Promise<AvailabilityResponse> {
     const params = new URLSearchParams({
       event_type_id: eventTypeId,
@@ -36,12 +39,20 @@ export class ApiClient {
       end,
       timezone,
     });
+    if (duration != null) {
+      params.set("duration", String(duration));
+    }
     return this.get<AvailabilityResponse>(`/v1/availability?${params}`);
   }
 
   /** Creates a booking (single invitee or group). */
   async createBooking(input: CreateBookingInput | CreateGroupBookingInput): Promise<BookingResult> {
     return this.post<BookingResult>("/v1/bookings", input);
+  }
+
+  /** Creates a waitlist entry. */
+  async createWaitlistEntry(input: CreateWaitlistInput): Promise<WaitlistResult> {
+    return this.post<WaitlistResult>("/v1/waitlist", input);
   }
 
   private async get<T>(path: string): Promise<T> {

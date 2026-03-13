@@ -13,6 +13,7 @@ describe("booking flow integration", () => {
     slug: "30-min",
     description: "A quick chat",
     duration_minutes: 30,
+    duration_options: null,
     buffer_before_minutes: 0,
     buffer_after_minutes: 0,
     color: "#3b82f6",

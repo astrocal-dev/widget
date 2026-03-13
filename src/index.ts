@@ -1,4 +1,4 @@
-import { h } from "preact";
+import { h, render } from "preact";
 import type { WidgetConfig, ThemeConfig, BookingResult, WidgetError } from "./types";
 import { mountWidget, unmountWidget, resolveTarget } from "./mount";
 import { Widget } from "./components/Widget";
@@ -72,6 +72,30 @@ export function open(config: WidgetConfig): void {
     const popupVNode = h(PopupOverlay, { onClose: handleClose, children: widgetVNode });
     mountWidget(host, popupVNode, config.colorScheme || "auto");
   }
+}
+
+/**
+ * Updates an inline widget in-place with a new config.
+ * Re-renders via Preact VDOM diffing into the existing shadow DOM —
+ * preserves component state (selected date, step) while updating
+ * props like title, description, and duration.
+ * No-op if no widget is mounted on the target.
+ */
+export function update(target: string | HTMLElement, config: WidgetConfig): void {
+  if (typeof document === "undefined") return;
+  const el = typeof target === "string" ? document.querySelector<HTMLElement>(target) : target;
+  if (!el) return;
+  const shadow = el.shadowRoot;
+  if (!shadow) return;
+  const container = shadow.querySelector("div");
+  if (!container) return;
+
+  if (config.demo && !config.eventTypeId) {
+    config.eventTypeId = "demo";
+  }
+
+  applyTheme(el, config.theme);
+  render(h(Widget, { config }), container);
 }
 
 /** Closes the popup widget (if open). No-op in server environments. */
