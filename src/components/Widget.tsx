@@ -82,23 +82,46 @@ export function Widget({ config }: WidgetProps) {
   }, [config.eventTypeId, config.apiUrl]);
 
   // Update event type in-place when demo config changes (preserves current step)
+  // When duration_options crosses the 2-option threshold, switch step accordingly.
   // When duration changes and we're viewing timeslots, regenerate them too.
   useEffect(() => {
     if (!config.demo) return;
     setState((prev) => {
       if (prev.step === "loading" || prev.step === "error") return prev;
+
+      const prevOpts = prev.eventType.duration_options;
+      const newOpts = demoEventType.duration_options;
+      const hadSelector = prevOpts && prevOpts.length >= 2;
+      const hasSelector = newOpts && newOpts.length >= 2;
+
+      // Threshold crossed: show duration selector step
+      if (!hadSelector && hasSelector) {
+        return { step: "duration", eventType: demoEventType };
+      }
+      // Threshold crossed: hide duration selector, go to calendar
+      if (hadSelector && !hasSelector) {
+        const dur = newOpts?.length === 1 ? newOpts[0]! : demoEventType.duration_minutes;
+        return { step: "calendar", eventType: demoEventType, selectedDuration: dur };
+      }
+
+      // In single-duration mode, selectedDuration tracks duration_minutes.
+      // In multi-duration mode (on calendar/timeslots after selecting), preserve user's choice.
+      const selectedDuration =
+        !hasSelector
+          ? (newOpts?.length === 1 ? newOpts[0]! : demoEventType.duration_minutes)
+          : ("selectedDuration" in prev ? prev.selectedDuration : demoEventType.duration_minutes);
+
       if (prev.step === "timeslots") {
-        const duration = prev.selectedDuration;
         const slots = generateDemoSlots(
           prev.date,
           timezone,
-          duration,
+          selectedDuration,
           demoEventType.buffer_before_minutes,
           demoEventType.buffer_after_minutes,
         );
-        return { ...prev, eventType: demoEventType, slots };
+        return { ...prev, eventType: demoEventType, selectedDuration, slots };
       }
-      return { ...prev, eventType: demoEventType };
+      return { ...prev, eventType: demoEventType, selectedDuration };
     });
   }, [
     config.demoEventType?.title,
@@ -267,6 +290,13 @@ export function Widget({ config }: WidgetProps) {
     setSelectedDate(null);
   }, []);
 
+  const handleBackToDuration = useCallback(() => {
+    if (state.step === "calendar") {
+      setState({ step: "duration", eventType: state.eventType });
+      setSelectedDate(null);
+    }
+  }, [state]);
+
   const handleBackToCalendar = useCallback(() => {
     if (state.step === "timeslots" || state.step === "form") {
       const options = state.eventType.duration_options;
@@ -401,6 +431,17 @@ export function Widget({ config }: WidgetProps) {
 
         {state.step === "calendar" && (
           <>
+            {state.eventType.duration_options &&
+              state.eventType.duration_options.length >= 2 && (
+                <button
+                  type="button"
+                  class="astrocal-back-link"
+                  onClick={handleBackToDuration}
+                  aria-label="Change duration"
+                >
+                  &#8249; Change duration
+                </button>
+              )}
             <Calendar
               timezone={timezone}
               selectedDate={selectedDate}

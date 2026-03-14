@@ -90,6 +90,124 @@ describe("Widget demoEventType merge", () => {
   });
 });
 
+describe("Widget duration_options step transitions on update", () => {
+  it("switches from calendar to duration step when options cross 2-option threshold", () => {
+    const { rerender } = render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [30] },
+        }}
+      />,
+    );
+
+    // Should start on calendar (single option)
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+
+    // Rerender with 2+ options → should switch to duration step
+    rerender(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [30, 60] },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Choose a duration")).toBeInTheDocument();
+    expect(screen.queryByTestId("calendar")).not.toBeInTheDocument();
+  });
+
+  it("switches from duration to calendar step when options drop below 2", () => {
+    const { rerender } = render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [30, 60] },
+        }}
+      />,
+    );
+
+    // Should start on duration step
+    expect(screen.getByText("Choose a duration")).toBeInTheDocument();
+
+    // Rerender with single option → should switch to calendar
+    rerender(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [30] },
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+    expect(screen.getByText("30 min")).toBeInTheDocument();
+  });
+
+  it("updates selectedDuration when duration_minutes changes in single-duration mode", () => {
+    const { rerender } = render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_minutes: 30 },
+        }}
+      />,
+    );
+
+    // Should show 30 min
+    expect(screen.getByText("30 min")).toBeInTheDocument();
+
+    // Rerender with 60 min → should update duration badge
+    rerender(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_minutes: 60 },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("60 min")).toBeInTheDocument();
+    expect(screen.queryByText("30 min")).not.toBeInTheDocument();
+  });
+
+  it("switches from duration to calendar step when options become null", () => {
+    const { rerender } = render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { duration_options: [15, 30, 60] },
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Choose a duration")).toBeInTheDocument();
+
+    // Rerender with no options → should switch to calendar with default duration
+    rerender(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Choose a duration")).not.toBeInTheDocument();
+    expect(screen.getByTestId("calendar")).toBeInTheDocument();
+  });
+});
+
 describe("Widget duration selector", () => {
   it("shows duration step when demo event type has 2+ duration_options", () => {
     render(
