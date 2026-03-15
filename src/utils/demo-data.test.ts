@@ -92,6 +92,60 @@ describe("generateDemoSlots", () => {
   });
 });
 
+describe("generateDemoSlots with availabilityRules", () => {
+  it("uses availability rules instead of default 9-5 window", () => {
+    // 2026-03-16 is a Monday (day_of_week=1)
+    const rules = [{ day_of_week: 1, start_time: "10:00", end_time: "14:00" }];
+    const slots = generateDemoSlots("2026-03-16", "UTC", 30, 0, 0, rules);
+    expect(slots.length).toBeGreaterThan(0);
+    for (const slot of slots) {
+      expect(slot.start_time >= "2026-03-16T10:00:00").toBe(true);
+      expect(slot.end_time <= "2026-03-16T14:00:00").toBe(true);
+    }
+    expect(slots[0]!.start_time).toBe("2026-03-16T10:00:00");
+    expect(slots[slots.length - 1]!.end_time).toBe("2026-03-16T14:00:00");
+  });
+
+  it("returns empty slots for unavailable day", () => {
+    // 2026-03-17 is a Tuesday (day_of_week=2), rules only cover Monday
+    const rules = [{ day_of_week: 1, start_time: "09:00", end_time: "17:00" }];
+    const slots = generateDemoSlots("2026-03-17", "UTC", 30, 0, 0, rules);
+    expect(slots).toHaveLength(0);
+  });
+
+  it("handles multiple time blocks per day", () => {
+    // 2026-03-16 is a Monday — two windows with a gap in the middle
+    const rules = [
+      { day_of_week: 1, start_time: "09:00", end_time: "12:00" },
+      { day_of_week: 1, start_time: "14:00", end_time: "17:00" },
+    ];
+    const slots = generateDemoSlots("2026-03-16", "UTC", 30, 0, 0, rules);
+    // Morning window: 09:00–12:00 → 6 slots
+    // Afternoon window: 14:00–17:00 → 6 slots
+    expect(slots).toHaveLength(12);
+    // Last slot of morning block ends at 12:00
+    expect(slots[5]!.end_time).toBe("2026-03-16T12:00:00");
+    // First slot of afternoon block starts at 14:00
+    expect(slots[6]!.start_time).toBe("2026-03-16T14:00:00");
+  });
+
+  it("falls back to 9-5 when no rules provided", () => {
+    const slots = generateDemoSlots("2026-03-16", "UTC");
+    expect(slots).toHaveLength(16);
+    expect(slots[0]!.start_time).toBe("2026-03-16T09:00:00");
+    expect(slots[slots.length - 1]!.end_time).toBe("2026-03-16T17:00:00");
+  });
+
+  it("handles HH:MM:SS format in rules", () => {
+    // 2026-03-16 is a Monday
+    const rules = [{ day_of_week: 1, start_time: "09:00:00", end_time: "17:00:00" }];
+    const slots = generateDemoSlots("2026-03-16", "UTC", 30, 0, 0, rules);
+    expect(slots).toHaveLength(16);
+    expect(slots[0]!.start_time).toBe("2026-03-16T09:00:00");
+    expect(slots[slots.length - 1]!.end_time).toBe("2026-03-16T17:00:00");
+  });
+});
+
 describe("createDemoBooking", () => {
   const slot = { start_time: "2026-03-15T09:00:00", end_time: "2026-03-15T09:30:00" };
   const data = { name: "Jane Doe", email: "jane@example.com", notes: "Looking forward to it" };

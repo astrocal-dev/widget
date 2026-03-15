@@ -106,10 +106,13 @@ export function Widget({ config }: WidgetProps) {
 
       // In single-duration mode, selectedDuration tracks duration_minutes.
       // In multi-duration mode (on calendar/timeslots after selecting), preserve user's choice.
-      const selectedDuration =
-        !hasSelector
-          ? (newOpts?.length === 1 ? newOpts[0]! : demoEventType.duration_minutes)
-          : ("selectedDuration" in prev ? prev.selectedDuration : demoEventType.duration_minutes);
+      const selectedDuration = !hasSelector
+        ? newOpts?.length === 1
+          ? newOpts[0]!
+          : demoEventType.duration_minutes
+        : "selectedDuration" in prev
+          ? prev.selectedDuration
+          : demoEventType.duration_minutes;
 
       if (prev.step === "timeslots") {
         const slots = generateDemoSlots(
@@ -118,6 +121,7 @@ export function Widget({ config }: WidgetProps) {
           selectedDuration,
           demoEventType.buffer_before_minutes,
           demoEventType.buffer_after_minutes,
+          config.demoAvailability,
         );
         return { ...prev, eventType: demoEventType, selectedDuration, slots };
       }
@@ -131,6 +135,7 @@ export function Widget({ config }: WidgetProps) {
     config.demoEventType?.buffer_before_minutes,
     config.demoEventType?.buffer_after_minutes,
     config.demoEventType?.color,
+    config.demoAvailability,
   ]);
 
   // Fetch slots when date changes
@@ -154,6 +159,7 @@ export function Widget({ config }: WidgetProps) {
           selectedDuration,
           eventType.buffer_before_minutes,
           eventType.buffer_after_minutes,
+          config.demoAvailability,
         );
         setWaitlistAvailableForDate(false);
         setState({ step: "timeslots", eventType, date, slots: demoSlots, selectedDuration });
@@ -181,11 +187,16 @@ export function Widget({ config }: WidgetProps) {
         // Filter slots for the selected date
         const dateSlots = availability.slots.filter((s) => s.start_time.startsWith(date));
         // Compute waitlist availability: all slots capped, at least one waitlist-available
-        const hasWaitlist =
+        const hasSlotLevelWaitlist =
           dateSlots.length > 0 &&
           dateSlots.every((s) => s.capped) &&
           dateSlots.some((s) => s.waitlist_available);
-        setWaitlistAvailableForDate(hasWaitlist);
+        // Fallback: check response-level fields when no slots are returned for this date
+        const hasResponseLevelWaitlist =
+          dateSlots.length === 0 &&
+          availability.capped === true &&
+          availability.waitlist_available === true;
+        setWaitlistAvailableForDate(hasSlotLevelWaitlist || hasResponseLevelWaitlist);
         // Show available (non-capped) slots; if all are capped, show empty with waitlist option
         const availableSlots = dateSlots.filter((s) => !s.capped);
         setState({ step: "timeslots", eventType, date, slots: availableSlots, selectedDuration });
@@ -431,17 +442,16 @@ export function Widget({ config }: WidgetProps) {
 
         {state.step === "calendar" && (
           <>
-            {state.eventType.duration_options &&
-              state.eventType.duration_options.length >= 2 && (
-                <button
-                  type="button"
-                  class="astrocal-back-link"
-                  onClick={handleBackToDuration}
-                  aria-label="Change duration"
-                >
-                  &#8249; Change duration
-                </button>
-              )}
+            {state.eventType.duration_options && state.eventType.duration_options.length >= 2 && (
+              <button
+                type="button"
+                class="astrocal-back-link"
+                onClick={handleBackToDuration}
+                aria-label="Change duration"
+              >
+                &#8249; Change duration
+              </button>
+            )}
             <Calendar
               timezone={timezone}
               selectedDate={selectedDate}

@@ -355,6 +355,89 @@ describe("waitlist flow integration", () => {
     }
   });
 
+  it("shows waitlist when response-level capped is true and slots array is empty", async () => {
+    const responseCapAvailability: AvailabilityResponse = {
+      event_type_id: "evt-123",
+      timezone: "America/New_York",
+      start: testDateInfo.monthStart,
+      end: testDateInfo.monthEnd,
+      slots: [],
+      capped: true,
+      waitlist_available: true,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEventType,
+    });
+
+    render(<Widget config={defaultConfig} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("30 Minute Meeting")).toBeInTheDocument();
+    });
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => responseCapAvailability,
+    });
+
+    const dayButtons = screen.getAllByRole("gridcell");
+    const targetDay = dayButtons.find(
+      (btn) => btn.textContent === String(testDateInfo.day) && !btn.hasAttribute("disabled"),
+    );
+
+    if (targetDay) {
+      fireEvent.click(targetDay);
+
+      await waitFor(() => {
+        expect(screen.getByRole("button", { name: /join waitlist/i })).toBeInTheDocument();
+      });
+    }
+  });
+
+  it("shows no slots without waitlist when response-level capped is true but waitlist_available is false", async () => {
+    const cappedNoWaitlistAvailability: AvailabilityResponse = {
+      event_type_id: "evt-123",
+      timezone: "America/New_York",
+      start: testDateInfo.monthStart,
+      end: testDateInfo.monthEnd,
+      slots: [],
+      capped: true,
+    };
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => mockEventType,
+    });
+
+    render(<Widget config={defaultConfig} />);
+
+    await waitFor(() => {
+      expect(screen.getByText("30 Minute Meeting")).toBeInTheDocument();
+    });
+
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => cappedNoWaitlistAvailability,
+    });
+
+    const dayButtons = screen.getAllByRole("gridcell");
+    const targetDay = dayButtons.find(
+      (btn) => btn.textContent === String(testDateInfo.day) && !btn.hasAttribute("disabled"),
+    );
+
+    if (targetDay) {
+      fireEvent.click(targetDay);
+
+      await waitFor(() => {
+        expect(screen.getByText("No available times for this date")).toBeInTheDocument();
+      });
+
+      expect(screen.queryByRole("button", { name: /join waitlist/i })).not.toBeInTheDocument();
+    }
+  });
+
   it("shows mixed slots normally when some are available and some are capped", async () => {
     const mixedAvailability: AvailabilityResponse = {
       event_type_id: "evt-123",

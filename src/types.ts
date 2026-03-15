@@ -35,6 +35,12 @@ export interface WidgetConfig {
       | "color"
     >
   >;
+  /** Availability rules for demo mode. When provided, slots are generated only within these time windows. Only used when demo is true. */
+  demoAvailability?: Array<{
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+  }>;
 }
 
 /** Theme customization via CSS custom properties. */
@@ -90,6 +96,9 @@ export interface AvailabilityResponse {
   start: string;
   end: string;
   slots: TimeSlot[];
+  capped?: boolean;
+  waitlist_available?: boolean;
+  waitlist_position?: number;
 }
 
 /** A single attendee for group bookings. */

@@ -22,24 +22,26 @@ export const DEMO_EVENT_TYPE: EventType = {
   updated_at: "2026-01-01T00:00:00Z",
 };
 
-/**
- * Generates demo time slots for a given date.
- * Fills 9:00 AM – 5:00 PM spaced by `durationMinutes`.
- */
-export function generateDemoSlots(
+/** Parses an "HH:MM" or "HH:MM:SS" time string into total minutes since midnight. */
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(":");
+  return parseInt(h!, 10) * 60 + parseInt(m!, 10);
+}
+
+/** Generates slots within a single time window [windowStart, windowEnd] in minutes. */
+function generateSlotsInWindow(
   date: string,
-  _timezone: string,
-  durationMinutes = 30,
-  bufferBeforeMinutes = 0,
-  bufferAfterMinutes = 0,
+  windowStart: number,
+  windowEnd: number,
+  durationMinutes: number,
+  bufferBeforeMinutes: number,
+  bufferAfterMinutes: number,
 ): TimeSlot[] {
   const slots: TimeSlot[] = [];
-  const startOfDay = 9 * 60; // 9:00 AM in minutes
-  const endOfDay = 17 * 60; // 5:00 PM in minutes
   const step = durationMinutes + bufferBeforeMinutes + bufferAfterMinutes;
 
-  for (let i = 0; startOfDay + i * step + durationMinutes <= endOfDay; i++) {
-    const startMin = startOfDay + i * step;
+  for (let i = 0; windowStart + i * step + durationMinutes <= windowEnd; i++) {
+    const startMin = windowStart + i * step;
     const endMin = startMin + durationMinutes;
     const startH = String(Math.floor(startMin / 60)).padStart(2, "0");
     const startM = String(startMin % 60).padStart(2, "0");
@@ -53,6 +55,50 @@ export function generateDemoSlots(
   }
 
   return slots;
+}
+
+/**
+ * Generates demo time slots for a given date.
+ * When `availabilityRules` are provided, slots are generated within the matching day's windows.
+ * If no rules match the day, returns an empty array (day is unavailable).
+ * Falls back to 9:00 AM – 5:00 PM when no rules are provided.
+ */
+export function generateDemoSlots(
+  date: string,
+  _timezone: string,
+  durationMinutes = 30,
+  bufferBeforeMinutes = 0,
+  bufferAfterMinutes = 0,
+  availabilityRules?: Array<{ day_of_week: number; start_time: string; end_time: string }>,
+): TimeSlot[] {
+  if (availabilityRules !== undefined) {
+    const dayOfWeek = new Date(date + "T12:00:00").getDay();
+    const matchingRules = availabilityRules.filter((r) => r.day_of_week === dayOfWeek);
+
+    if (matchingRules.length === 0) {
+      return [];
+    }
+
+    return matchingRules.flatMap((rule) =>
+      generateSlotsInWindow(
+        date,
+        parseTimeToMinutes(rule.start_time),
+        parseTimeToMinutes(rule.end_time),
+        durationMinutes,
+        bufferBeforeMinutes,
+        bufferAfterMinutes,
+      ),
+    );
+  }
+
+  return generateSlotsInWindow(
+    date,
+    9 * 60,
+    17 * 60,
+    durationMinutes,
+    bufferBeforeMinutes,
+    bufferAfterMinutes,
+  );
 }
 
 /**
