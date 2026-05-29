@@ -51,28 +51,27 @@ export function Calendar({ timezone, selectedDate, onDateSelect }: CalendarProps
       if (!selectedDate) return;
 
       const current = new Date(selectedDate + "T00:00:00");
-      let next: Date | null = null;
+      let dayOffset: number;
 
       switch (e.key) {
         case "ArrowLeft":
-          next = new Date(current);
-          next.setDate(current.getDate() - 1);
+          dayOffset = -1;
           break;
         case "ArrowRight":
-          next = new Date(current);
-          next.setDate(current.getDate() + 1);
+          dayOffset = 1;
           break;
         case "ArrowUp":
-          next = new Date(current);
-          next.setDate(current.getDate() - 7);
+          dayOffset = -7;
           break;
         case "ArrowDown":
-          next = new Date(current);
-          next.setDate(current.getDate() + 7);
+          dayOffset = 7;
           break;
         default:
           return;
       }
+
+      const next = new Date(current);
+      next.setDate(current.getDate() + dayOffset);
 
       e.preventDefault();
       const nextStr = toDateString(next);

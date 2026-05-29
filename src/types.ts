@@ -14,6 +14,8 @@ export interface WidgetConfig {
   theme?: ThemeConfig;
   /** Color scheme: "light", "dark", or "auto" (detects from host page). Defaults to "auto". */
   colorScheme?: "light" | "dark" | "auto";
+  /** Hide the "Powered by Astrocal" footer inside the widget. */
+  hideBranding?: boolean;
   /** Callback fired after a booking is successfully created. */
   onBookingCreated?: (booking: BookingResult) => void;
   /** Callback fired when the widget encounters an error. */

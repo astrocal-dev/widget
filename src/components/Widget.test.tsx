@@ -208,6 +208,50 @@ describe("Widget duration_options step transitions on update", () => {
   });
 });
 
+describe("Widget hideBranding", () => {
+  it("shows 'Powered by' footer by default", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Powered by")).toBeInTheDocument();
+    expect(screen.getByText("Astrocal")).toBeInTheDocument();
+  });
+
+  it("hides 'Powered by' footer when hideBranding is true", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          hideBranding: true,
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Powered by")).not.toBeInTheDocument();
+  });
+
+  it("shows 'Powered by' footer when hideBranding is false", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          hideBranding: false,
+        }}
+      />,
+    );
+
+    expect(screen.getByText("Powered by")).toBeInTheDocument();
+  });
+});
+
 describe("Widget duration selector", () => {
   it("shows duration step when demo event type has 2+ duration_options", () => {
     render(

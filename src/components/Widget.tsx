@@ -520,12 +520,14 @@ export function Widget({ config }: WidgetProps) {
         )}
       </div>
 
-      <div class="astrocal-powered">
-        Powered by{" "}
-        <a href="https://astrocal.dev" target="_blank" rel="noopener">
-          Astrocal
-        </a>
-      </div>
+      {!config.hideBranding && (
+        <div class="astrocal-powered">
+          Powered by{" "}
+          <a href="https://astrocal.dev" target="_blank" rel="noopener">
+            Astrocal
+          </a>
+        </div>
+      )}
     </div>
   );
 }
