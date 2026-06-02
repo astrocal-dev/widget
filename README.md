@@ -1,14 +1,47 @@
 # @astrocal/widget
 
-Embeddable booking widget for [Astrocal](https://astrocal.dev) — drop-in scheduling UI for any website or app.
+**Add scheduling to any website in under 60 seconds.** The official embeddable booking widget from [Astrocal](https://astrocal.dev) — the API-first scheduling platform built for developers.
 
-## Installation
+Drop in a script tag or install from npm. Your visitors book meetings directly on your site — no redirects, no iframes, no Calendly branding.
+
+[Get started free](https://astrocal.dev/signup) | [Widget Documentation](https://astrocal.dev/docs/guides/widget) | [Live Demo](https://astrocal.dev)
+
+## Why Astrocal's Widget?
+
+- **Shadow DOM isolation** — Widget styles never leak into or clash with your site's CSS. Zero conflicts, guaranteed.
+- **Fully themeable** — Match your brand with CSS custom properties. Override colors, fonts, border radius, and more.
+- **Popup or inline** — Open as a modal overlay, or embed directly into any container on your page.
+- **Whitelabel ready** — Remove Astrocal branding on [paid plans](https://astrocal.dev/pricing). It's your booking experience.
+- **Mobile-first** — Responsive from 320px up. Looks great on every screen size.
+- **SSR safe** — Works with Next.js, Nuxt, Astro, and any SSR framework. No hydration errors.
+- **Light, dark, and auto** — Respects `prefers-color-scheme` or set it explicitly.
+
+## Quick Start (Script Tag)
+
+No build step required. Load from CDN and go:
+
+```html
+<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
+<script>
+  Astrocal.open({
+    eventTypeId: "your-event-type-id",
+    mode: "popup",
+  });
+</script>
+```
+
+Or use data attributes for zero-JavaScript setup:
+
+```html
+<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
+<div data-astrocal-event-type-id="your-event-type-id" data-astrocal-mode="inline"></div>
+```
+
+## Quick Start (npm)
 
 ```bash
 npm install @astrocal/widget
 ```
-
-## Quick Start (ESM)
 
 ```typescript
 import { open } from "@astrocal/widget";
@@ -26,7 +59,7 @@ Mount the widget into a specific DOM element:
 ```typescript
 import { open, destroy } from "@astrocal/widget";
 
-// Mount
+// Mount into a container
 open({
   eventTypeId: "your-event-type-id",
   mode: "inline",
@@ -35,27 +68,6 @@ open({
 
 // Clean up when done
 destroy("#booking-container");
-```
-
-## CDN Usage (Script Tag)
-
-For non-npm users, load the widget via a script tag:
-
-```html
-<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
-<script>
-  Astrocal.open({
-    eventTypeId: "your-event-type-id",
-    mode: "popup",
-  });
-</script>
-```
-
-Or use auto-initialization with data attributes:
-
-```html
-<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
-<div data-astrocal-event-type-id="your-event-type-id" data-astrocal-mode="inline"></div>
 ```
 
 ## API
@@ -76,23 +88,39 @@ Destroys an inline widget mounted on a target element. Removes the Shadow DOM an
 
 Scans the DOM for elements with `data-astrocal-*` attributes and mounts widgets automatically.
 
-## WidgetConfig
+## Configuration
 
 | Property           | Type                               | Default                      | Description                                |
 | ------------------ | ---------------------------------- | ---------------------------- | ------------------------------------------ |
 | `eventTypeId`      | `string`                           | required                     | Event type UUID to display                 |
 | `apiUrl`           | `string`                           | `"https://api.astrocal.dev"` | API base URL                               |
 | `mode`             | `"inline" \| "popup"`              | `"popup"`                    | Render mode                                |
-| `target`           | `string \| HTMLElement`            | —                            | DOM element or CSS selector (inline mode)  |
+| `target`           | `string \| HTMLElement`            | ---                          | DOM element or CSS selector (inline mode)  |
 | `timezone`         | `string`                           | auto-detected                | IANA timezone override                     |
-| `theme`            | `ThemeConfig`                      | —                            | CSS custom property overrides              |
+| `theme`            | `ThemeConfig`                      | ---                          | CSS custom property overrides              |
 | `colorScheme`      | `"light" \| "dark" \| "auto"`      | `"auto"`                     | Color scheme                               |
 | `demo`             | `boolean`                          | `false`                      | Enable demo mode (mock data, no API calls) |
-| `onBookingCreated` | `(booking: BookingResult) => void` | —                            | Booking success callback                   |
-| `onError`          | `(error: WidgetError) => void`     | —                            | Error callback                             |
-| `onClose`          | `() => void`                       | —                            | Popup close callback                       |
+| `onBookingCreated` | `(booking: BookingResult) => void` | ---                          | Booking success callback                   |
+| `onError`          | `(error: WidgetError) => void`     | ---                          | Error callback                             |
+| `onClose`          | `() => void`                       | ---                          | Popup close callback                       |
 
-## ThemeConfig
+## Theming
+
+Customize the widget to match your brand:
+
+```typescript
+open({
+  eventTypeId: "your-event-type-id",
+  theme: {
+    primaryColor: "#6366f1",
+    primaryHoverColor: "#4f46e5",
+    backgroundColor: "#ffffff",
+    textColor: "#1f2937",
+    borderRadius: "12px",
+    fontFamily: "Inter, sans-serif",
+  },
+});
+```
 
 | Property            | CSS Custom Property        | Description          |
 | ------------------- | -------------------------- | -------------------- |
@@ -108,21 +136,37 @@ Scans the DOM for elements with `data-astrocal-*` attributes and mounts widgets 
 
 ## SSR / Server-Side Rendering
 
-The package is safe to import in Node.js (e.g., Next.js, Nuxt). The `autoInit()` function is guarded and will not run on the server. However, `open()` and `destroy()` require a browser environment and will throw a clear error if called without a DOM. `close()` is a silent no-op on the server.
+The package is safe to import in Node.js environments like Next.js, Nuxt, or Astro. The `autoInit()` function is guarded and won't run on the server. `open()` and `destroy()` require a browser and will throw a clear error if called without a DOM. `close()` is a silent no-op on the server.
 
 ```typescript
-// Safe — no error on import
 import { open } from "@astrocal/widget";
 
-// Only call in browser context
 if (typeof window !== "undefined") {
   open({ eventTypeId: "..." });
 }
 ```
 
-## Documentation
+## Part of the Astrocal Platform
 
-Full documentation at [docs.astrocal.dev](https://docs.astrocal.dev).
+This widget is one of several ways to integrate [Astrocal scheduling](https://astrocal.dev) into your product:
+
+- **[React SDK](https://www.npmjs.com/package/@astrocal/react)** (`@astrocal/react`) — Typed hooks, provider, and widget wrapper for React apps
+- **[MCP Server](https://www.npmjs.com/package/@astrocal/mcp-server)** (`@astrocal/mcp-server`) — Let AI agents book meetings via the Model Context Protocol
+- **[REST API](https://astrocal.dev/docs/api-reference)** — Full scheduling API with OpenAPI 3.1 spec
+- **[Webhooks](https://astrocal.dev/docs/guides/webhooks)** — Real-time notifications for booking lifecycle events
+- **[Dashboard](https://astrocal.dev/dashboard)** — Manage event types, bookings, team members, and billing
+
+[Create a free account](https://astrocal.dev/signup) to get your event type ID and start embedding.
+
+## Links
+
+- [Astrocal Website](https://astrocal.dev)
+- [Widget Guide](https://astrocal.dev/docs/guides/widget)
+- [Documentation](https://astrocal.dev/docs)
+- [Dashboard](https://astrocal.dev/dashboard)
+- [Pricing](https://astrocal.dev/pricing)
+- [GitHub](https://github.com/astrocal-dev/widget)
+- [Issues](https://github.com/astrocal-dev/widget/issues)
 
 ## License
 
