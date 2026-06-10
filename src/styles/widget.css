@@ -95,13 +95,32 @@
   margin: 0;
 }
 
+.astrocal-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
 .astrocal-duration {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   color: var(--astrocal-text-secondary);
   font-size: 13px;
-  margin-top: 8px;
+}
+
+.astrocal-price {
+  display: inline-flex;
+  align-items: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--astrocal-text);
+}
+
+.astrocal-price-summary {
+  font-weight: 600;
+  color: var(--astrocal-text);
 }
 
 .astrocal-widget-body {
@@ -638,6 +657,47 @@
   text-transform: uppercase;
   letter-spacing: 0.02em;
   margin-bottom: 2px;
+}
+
+/* ─── Payment Redirect ─────────────────────────────────────────── */
+
+.astrocal-payment-redirect {
+  text-align: center;
+  padding: 24px 0;
+}
+
+.astrocal-payment-redirect-icon {
+  font-size: 32px;
+  margin-bottom: 16px;
+}
+
+.astrocal-payment-redirect h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.astrocal-payment-redirect p {
+  color: var(--astrocal-text-secondary);
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.astrocal-payment-amount {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--astrocal-text);
+  margin: 12px 0;
+}
+
+.astrocal-payment-redirect-spinner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  color: var(--astrocal-text-muted);
+  font-size: 13px;
 }
 
 /* ─── Error Screen ─────────────────────────────────────────────── */

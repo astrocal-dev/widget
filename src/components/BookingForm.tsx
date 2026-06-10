@@ -1,6 +1,7 @@
 import { useState, useCallback } from "preact/hooks";
 import type { EventType, TimeSlot, WidgetError, AttendeeInput } from "../types";
 import { formatTime, formatDate } from "../utils/dates";
+import { formatPrice } from "../utils/format-price";
 
 interface BookingFormProps {
   eventType: EventType;
@@ -165,6 +166,14 @@ export function BookingForm({
         {eventType.title} &middot; {eventType.duration_minutes} min
         <br />
         {formatDate(date)} at {formatTime(slot.start_time, timezone)}
+        {eventType.price_amount != null && (
+          <>
+            <br />
+            <span class="astrocal-price-summary">
+              {formatPrice(eventType.price_amount, eventType.price_currency)}
+            </span>
+          </>
+        )}
         {isGroup && (
           <>
             <br />
@@ -307,7 +316,11 @@ export function BookingForm({
       </div>
 
       <button type="submit" class="astrocal-submit-btn" disabled={submitting}>
-        {submitting ? "Booking..." : "Confirm Booking"}
+        {submitting
+          ? "Booking..."
+          : eventType.price_amount != null
+            ? `Pay ${formatPrice(eventType.price_amount, eventType.price_currency)}`
+            : "Confirm Booking"}
       </button>
     </form>
   );

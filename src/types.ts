@@ -18,6 +18,8 @@ export interface WidgetConfig {
   hideBranding?: boolean;
   /** Callback fired after a booking is successfully created. */
   onBookingCreated?: (booking: BookingResult) => void;
+  /** Callback fired when a booking requires payment (pending_payment status). */
+  onPaymentRequired?: (booking: BookingResult) => void;
   /** Callback fired when the widget encounters an error. */
   onError?: (error: WidgetError) => void;
   /** Callback fired when the popup is closed. */
@@ -176,6 +178,12 @@ export interface BookingResult {
   cancel_token: string;
   attendee_count: number;
   attendees?: AttendeeResult[];
+  payment?: {
+    amount: number;
+    currency: string;
+    client_secret: string;
+    stripe_payment_intent_id: string;
+  };
   created_at: string;
 }
 
@@ -209,5 +217,6 @@ export type WidgetState =
     }
   | { step: "form"; eventType: EventType; slot: TimeSlot; selectedDuration: number }
   | { step: "confirmation"; eventType: EventType; booking: BookingResult }
+  | { step: "payment"; eventType: EventType; booking: BookingResult }
   | { step: "waitlist-form"; eventType: EventType; date: string; selectedDuration: number }
   | { step: "waitlist-confirmation"; eventType: EventType; entry: WaitlistResult };

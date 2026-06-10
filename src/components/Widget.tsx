@@ -11,10 +11,12 @@ import { ApiClient } from "../utils/api";
 import { DEMO_EVENT_TYPE, generateDemoSlots, createDemoBooking } from "../utils/demo-data";
 import { detectTimezone } from "../utils/timezone";
 import { firstDayOfMonthStr, lastDayOfMonthStr, parseDateString } from "../utils/dates";
+import { formatPrice } from "../utils/format-price";
 import { Calendar } from "./Calendar";
 import { TimeSlots } from "./TimeSlots";
 import { BookingForm } from "./BookingForm";
 import { Confirmation } from "./Confirmation";
+import { PaymentRedirect } from "./PaymentRedirect";
 import { WaitlistForm } from "./WaitlistForm";
 import { WaitlistConfirmation } from "./WaitlistConfirmation";
 import { ErrorScreen } from "./ErrorScreen";
@@ -282,8 +284,14 @@ export function Widget({ config }: WidgetProps) {
                 notes: data.notes || undefined,
                 duration,
               });
-        setState({ step: "confirmation", eventType: state.eventType, booking });
-        config.onBookingCreated?.(booking);
+        if (booking.status === "pending_payment" && booking.payment) {
+          setState({ step: "payment", eventType: state.eventType, booking });
+          config.onBookingCreated?.(booking);
+          config.onPaymentRequired?.(booking);
+        } else {
+          setState({ step: "confirmation", eventType: state.eventType, booking });
+          config.onBookingCreated?.(booking);
+        }
       } catch (err) {
         const error = err as WidgetError;
         setSubmitError(error);
@@ -422,7 +430,14 @@ export function Widget({ config }: WidgetProps) {
           {state.step !== "duration" &&
             state.step !== "waitlist-form" &&
             state.step !== "waitlist-confirmation" && (
-              <div class="astrocal-duration">{state.selectedDuration} min</div>
+              <div class="astrocal-header-meta">
+                <div class="astrocal-duration">{state.selectedDuration} min</div>
+                {state.eventType.price_amount != null && (
+                  <div class="astrocal-price">
+                    {formatPrice(state.eventType.price_amount, state.eventType.price_currency)}
+                  </div>
+                )}
+              </div>
             )}
         </div>
       )}
@@ -496,6 +511,14 @@ export function Widget({ config }: WidgetProps) {
             timezone={timezone}
             demo={config.demo}
             onReset={handleReset}
+          />
+        )}
+
+        {state.step === "payment" && (
+          <PaymentRedirect
+            eventType={state.eventType}
+            booking={state.booking}
+            timezone={timezone}
           />
         )}
 
