@@ -62,10 +62,13 @@ describe("ApiClient", () => {
       const client = new ApiClient("https://api.astrocal.dev");
       const result = await client.getEventType("evt-123");
 
-      expect(fetchMock).toHaveBeenCalledWith("https://api.astrocal.dev/v1/event-types/evt-123", {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-      });
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.astrocal.dev/v1/public/event-types/evt-123",
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+        },
+      );
       expect(result).toEqual(mockEventType);
     });
 

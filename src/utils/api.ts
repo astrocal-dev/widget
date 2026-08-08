@@ -22,7 +22,7 @@ export class ApiClient {
 
   /** Fetches a public event type by ID. */
   async getEventType(eventTypeId: string): Promise<EventType> {
-    return this.get<EventType>(`/v1/event-types/${eventTypeId}`);
+    return this.get<EventType>(`/v1/public/event-types/${eventTypeId}`);
   }
 
   /** Fetches available time slots for a date range. */
