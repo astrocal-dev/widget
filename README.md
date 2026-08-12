@@ -1,17 +1,17 @@
 # @astrocal/widget
 
-**Add scheduling to any website in under 60 seconds.** The official embeddable booking widget from [Astrocal](https://astrocal.dev) — the API-first scheduling platform built for developers.
+**Add scheduling to any website in under 60 seconds.** The official embeddable booking widget from [Astrocal](https://www.astrocal.dev) — the API-first scheduling platform built for developers.
 
 Drop in a script tag or install from npm. Your visitors book meetings directly on your site — no redirects, no iframes, no Calendly branding.
 
-[Get started free](https://astrocal.dev/signup) | [Widget Documentation](https://astrocal.dev/docs/guides/widget) | [Live Demo](https://astrocal.dev)
+[Get started free](https://www.astrocal.dev/signup) | [Widget Documentation](https://www.astrocal.dev/docs/guides/widget) | [Live Demo](https://www.astrocal.dev)
 
 ## Why Astrocal's Widget?
 
 - **Shadow DOM isolation** — Widget styles never leak into or clash with your site's CSS. Zero conflicts, guaranteed.
 - **Fully themeable** — Match your brand with CSS custom properties. Override colors, fonts, border radius, and more.
 - **Popup or inline** — Open as a modal overlay, or embed directly into any container on your page.
-- **Whitelabel ready** — Remove Astrocal branding on [paid plans](https://astrocal.dev/pricing). It's your booking experience.
+- **Whitelabel ready** — Remove Astrocal branding on [paid plans](https://www.astrocal.dev/pricing). It's your booking experience.
 - **Mobile-first** — Responsive from 320px up. Looks great on every screen size.
 - **SSR safe** — Works with Next.js, Nuxt, Astro, and any SSR framework. No hydration errors.
 - **Light, dark, and auto** — Respects `prefers-color-scheme` or set it explicitly.
@@ -148,23 +148,23 @@ if (typeof window !== "undefined") {
 
 ## Part of the Astrocal Platform
 
-This widget is one of several ways to integrate [Astrocal scheduling](https://astrocal.dev) into your product:
+This widget is one of several ways to integrate [Astrocal scheduling](https://www.astrocal.dev) into your product:
 
 - **[React SDK](https://www.npmjs.com/package/@astrocal/react)** (`@astrocal/react`) — Typed hooks, provider, and widget wrapper for React apps
 - **[MCP Server](https://www.npmjs.com/package/@astrocal/mcp-server)** (`@astrocal/mcp-server`) — Let AI agents book meetings via the Model Context Protocol
-- **[REST API](https://astrocal.dev/docs/api-reference)** — Full scheduling API with OpenAPI 3.1 spec
-- **[Webhooks](https://astrocal.dev/docs/guides/webhooks)** — Real-time notifications for booking lifecycle events
-- **[Dashboard](https://astrocal.dev/dashboard)** — Manage event types, bookings, team members, and billing
+- **[REST API](https://www.astrocal.dev/docs/api-reference)** — Full scheduling API with OpenAPI 3.1 spec
+- **[Webhooks](https://www.astrocal.dev/docs/guides/webhooks)** — Real-time notifications for booking lifecycle events
+- **[Dashboard](https://www.astrocal.dev/dashboard)** — Manage event types, bookings, team members, and billing
 
-[Create a free account](https://astrocal.dev/signup) to get your event type ID and start embedding.
+[Create a free account](https://www.astrocal.dev/signup) to get your event type ID and start embedding.
 
 ## Links
 
-- [Astrocal Website](https://astrocal.dev)
-- [Widget Guide](https://astrocal.dev/docs/guides/widget)
-- [Documentation](https://astrocal.dev/docs)
-- [Dashboard](https://astrocal.dev/dashboard)
-- [Pricing](https://astrocal.dev/pricing)
+- [Astrocal Website](https://www.astrocal.dev)
+- [Widget Guide](https://www.astrocal.dev/docs/guides/widget)
+- [Documentation](https://www.astrocal.dev/docs)
+- [Dashboard](https://www.astrocal.dev/dashboard)
+- [Pricing](https://www.astrocal.dev/pricing)
 - [GitHub](https://github.com/astrocal-dev/widget)
 - [Issues](https://github.com/astrocal-dev/widget/issues)
 

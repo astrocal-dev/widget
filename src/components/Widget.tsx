@@ -546,7 +546,7 @@ export function Widget({ config }: WidgetProps) {
       {!config.hideBranding && (
         <div class="astrocal-powered">
           Powered by{" "}
-          <a href="https://astrocal.dev" target="_blank" rel="noopener">
+          <a href="https://www.astrocal.dev" target="_blank" rel="noopener">
             Astrocal
           </a>
         </div>

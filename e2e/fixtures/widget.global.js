@@ -2108,7 +2108,7 @@ var Astrocal = (() => {
             children: [
               "Powered by ",
               l("a", {
-                href: "https://astrocal.dev",
+                href: "https://www.astrocal.dev",
                 target: "_blank",
                 rel: "noopener",
                 children: "Astrocal",
