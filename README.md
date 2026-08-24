@@ -21,10 +21,10 @@ Drop in a script tag or install from npm. Your visitors book meetings directly o
 No build step required. Load from CDN and go:
 
 ```html
-<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
+<script src="https://cdn.astrocal.dev/widget/v1/astrocal.js"></script>
 <script>
   Astrocal.open({
-    eventTypeId: "your-event-type-id",
+    eventTypeId: "YOUR-EVENT-TYPE-ID",
     mode: "popup",
   });
 </script>
@@ -33,8 +33,8 @@ No build step required. Load from CDN and go:
 Or use data attributes for zero-JavaScript setup:
 
 ```html
-<script src="https://cdn.astrocal.dev/widget/latest/astrocal.js"></script>
-<div data-astrocal-event-type-id="your-event-type-id" data-astrocal-mode="inline"></div>
+<script src="https://cdn.astrocal.dev/widget/v1/astrocal.js"></script>
+<div data-astrocal-event-type-id="YOUR-EVENT-TYPE-ID" data-astrocal-mode="inline"></div>
 ```
 
 ## Quick Start (npm)
@@ -47,7 +47,7 @@ npm install @astrocal/widget
 import { open } from "@astrocal/widget";
 
 open({
-  eventTypeId: "your-event-type-id",
+  eventTypeId: "YOUR-EVENT-TYPE-ID",
   mode: "popup",
 });
 ```
@@ -61,7 +61,7 @@ import { open, destroy } from "@astrocal/widget";
 
 // Mount into a container
 open({
-  eventTypeId: "your-event-type-id",
+  eventTypeId: "YOUR-EVENT-TYPE-ID",
   mode: "inline",
   target: "#booking-container",
 });
@@ -110,7 +110,7 @@ Customize the widget to match your brand:
 
 ```typescript
 open({
-  eventTypeId: "your-event-type-id",
+  eventTypeId: "YOUR-EVENT-TYPE-ID",
   theme: {
     primaryColor: "#6366f1",
     primaryHoverColor: "#4f46e5",
