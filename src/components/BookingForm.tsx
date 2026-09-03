@@ -159,7 +159,9 @@ export function BookingForm({
         >
           &#8249;
         </button>
-        <span style={{ fontWeight: 600, fontSize: "15px" }}>Your Details</span>
+        <span style={{ fontWeight: 600, fontSize: "15px" }} data-astrocal-focus tabIndex={-1}>
+          Your Details
+        </span>
       </div>
 
       <div class="astrocal-form-summary">

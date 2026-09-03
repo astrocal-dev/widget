@@ -6,6 +6,7 @@ import type {
   BookingResult,
   CreateWaitlistInput,
   WaitlistResult,
+  RescheduleBookingInput,
   ApiErrorResponse,
   WidgetError,
 } from "../types";
@@ -55,6 +56,16 @@ export class ApiClient {
     return this.post<WaitlistResult>("/v1/waitlist", input);
   }
 
+  /** Reschedules an existing booking using its cancel token. */
+  async rescheduleBooking(
+    bookingId: string,
+    token: string,
+    input: RescheduleBookingInput,
+  ): Promise<BookingResult> {
+    const path = `/v1/bookings/${encodeURIComponent(bookingId)}/reschedule?token=${encodeURIComponent(token)}`;
+    return this.post<BookingResult>(path, input);
+  }
+
   private async get<T>(path: string): Promise<T> {
     const res = await fetch(`${this.baseUrl}${path}`, {
       method: "GET",
@@ -87,12 +98,15 @@ export class ApiClient {
       return { code: "not_found", message: "Event type not found" };
     }
 
-    if (res.status === 409) {
-      return { code: "slot_unavailable", message: "This time slot is no longer available" };
-    }
-
     try {
       const body = (await res.json()) as ApiErrorResponse;
+      if (res.status === 409) {
+        // Keep the API's reason: a cancelled booking or a taken slot need different copy.
+        return {
+          code: "slot_unavailable",
+          message: body.error?.message || "This time slot is no longer available",
+        };
+      }
       if (res.status === 400 || res.status === 422) {
         return {
           code: "validation_error",
@@ -104,6 +118,9 @@ export class ApiClient {
         message: body.error?.message || `Request failed (${res.status})`,
       };
     } catch {
+      if (res.status === 409) {
+        return { code: "slot_unavailable", message: "This time slot is no longer available" };
+      }
       return { code: "unknown", message: `Request failed (${res.status})` };
     }
   }

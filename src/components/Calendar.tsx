@@ -110,6 +110,13 @@ export function Calendar({ timezone, selectedDate, onDateSelect }: CalendarProps
     });
   }
 
+  // Rows of seven so the grid exposes role="row" between grid and gridcell.
+  type Cell = (typeof days)[number] | null;
+  const cells: Cell[] = [...Array.from({ length: startDay }, (): Cell => null), ...days];
+  while (cells.length % 7 !== 0) cells.push(null);
+  const weeks: Cell[][] = [];
+  for (let i = 0; i < cells.length; i += 7) weeks.push(cells.slice(i, i + 7));
+
   return (
     <div>
       <div class="astrocal-calendar-nav">
@@ -128,40 +135,54 @@ export function Calendar({ timezone, selectedDate, onDateSelect }: CalendarProps
         </button>
       </div>
       <div ref={gridRef} class="astrocal-calendar-grid" role="grid" aria-label="Calendar">
-        {DAY_NAMES.map((name) => (
-          <div key={name} class="astrocal-day-header" role="columnheader">
-            {name}
+        <div role="row" class="astrocal-calendar-row">
+          {DAY_NAMES.map((name) => (
+            <div key={name} class="astrocal-day-header" role="columnheader">
+              {name}
+            </div>
+          ))}
+        </div>
+        {weeks.map((week, weekIndex) => (
+          <div key={weekIndex} role="row" class="astrocal-calendar-row">
+            {week.map((cell, cellIndex) => {
+              if (!cell) {
+                return (
+                  <div
+                    key={`empty-${weekIndex}-${cellIndex}`}
+                    class="astrocal-day astrocal-day--empty"
+                    role="gridcell"
+                    aria-hidden="true"
+                  />
+                );
+              }
+              const { day, dateStr, isToday, isPast } = cell;
+              const isSelected = dateStr === selectedDate;
+              const classes = [
+                "astrocal-day",
+                isToday && "astrocal-day--today",
+                isSelected && "astrocal-day--selected",
+              ]
+                .filter(Boolean)
+                .join(" ");
+
+              return (
+                <button
+                  key={dateStr}
+                  type="button"
+                  class={classes}
+                  disabled={isPast}
+                  onClick={() => onDateSelect(dateStr)}
+                  aria-label={`${dateStr}${isToday ? ", today" : ""}${isSelected ? ", selected" : ""}`}
+                  aria-selected={isSelected}
+                  tabIndex={isSelected ? 0 : -1}
+                  role="gridcell"
+                >
+                  {day}
+                </button>
+              );
+            })}
           </div>
         ))}
-        {Array.from({ length: startDay }, (_, i) => (
-          <div key={`empty-${i}`} class="astrocal-day astrocal-day--empty" />
-        ))}
-        {days.map(({ day, dateStr, isToday, isPast }) => {
-          const isSelected = dateStr === selectedDate;
-          const classes = [
-            "astrocal-day",
-            isToday && "astrocal-day--today",
-            isSelected && "astrocal-day--selected",
-          ]
-            .filter(Boolean)
-            .join(" ");
-
-          return (
-            <button
-              key={dateStr}
-              type="button"
-              class={classes}
-              disabled={isPast}
-              onClick={() => onDateSelect(dateStr)}
-              aria-label={`${dateStr}${isToday ? ", today" : ""}${isSelected ? ", selected" : ""}`}
-              aria-selected={isSelected}
-              tabIndex={isSelected ? 0 : -1}
-              role="gridcell"
-            >
-              {day}
-            </button>
-          );
-        })}
       </div>
     </div>
   );

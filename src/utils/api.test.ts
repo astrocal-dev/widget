@@ -44,6 +44,8 @@ describe("ApiClient", () => {
         buffer_before_minutes: 0,
         buffer_after_minutes: 0,
         minimum_notice_minutes: 0,
+        conferencing_provider: null,
+        location: null,
         color: "#3b82f6",
         timezone: "America/New_York",
         active: true,
@@ -178,6 +180,8 @@ describe("ApiClient", () => {
         invitee_timezone: "America/New_York",
         notes: "Looking forward to it",
         cancel_token: "tok-xyz",
+        meeting_url: null,
+        location: null,
         attendee_count: 1,
         created_at: "2024-01-01T12:00:00Z",
       };
@@ -219,6 +223,8 @@ describe("ApiClient", () => {
         invitee_timezone: "America/New_York",
         notes: null,
         cancel_token: "tok-xyz",
+        meeting_url: null,
+        location: null,
         attendee_count: 1,
         created_at: "2024-01-01T12:00:00Z",
       };
@@ -256,6 +262,8 @@ describe("ApiClient", () => {
         invitee_timezone: "America/New_York",
         notes: null,
         cancel_token: "tok-xyz",
+        meeting_url: null,
+        location: null,
         attendee_count: 1,
         created_at: "2024-01-01T12:00:00Z",
       };
@@ -298,7 +306,7 @@ describe("ApiClient", () => {
 
       await expect(client.createBooking(input)).rejects.toEqual({
         code: "slot_unavailable",
-        message: "This time slot is no longer available",
+        message: "Slot taken",
       });
     });
 
@@ -348,6 +356,55 @@ describe("ApiClient", () => {
         code: "validation_error",
         message: "Missing required field",
       });
+    });
+  });
+
+  describe("rescheduleBooking", () => {
+    it("posts to the token-authenticated reschedule endpoint", async () => {
+      const rescheduled = { id: "bkg-123", status: "confirmed" };
+      fetchMock.mockResolvedValueOnce({ ok: true, json: async () => rescheduled });
+
+      const client = new ApiClient("https://api.astrocal.dev");
+      const result = await client.rescheduleBooking("bkg-123", "tok/with?chars", {
+        new_start_time: "2026-03-20T15:00:00Z",
+        reason: "Clash",
+      });
+
+      expect(fetchMock).toHaveBeenCalledWith(
+        "https://api.astrocal.dev/v1/bookings/bkg-123/reschedule?token=tok%2Fwith%3Fchars",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ new_start_time: "2026-03-20T15:00:00Z", reason: "Clash" }),
+        },
+      );
+      expect(result).toEqual(rescheduled);
+    });
+
+    it("maps 409 to slot_unavailable", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 409,
+        json: async () => ({ error: { code: "conflict", message: "taken" } }),
+      });
+
+      const client = new ApiClient();
+      await expect(
+        client.rescheduleBooking("bkg-123", "tok", { new_start_time: "2026-03-20T15:00:00Z" }),
+      ).rejects.toEqual({ code: "slot_unavailable", message: "taken" });
+    });
+
+    it("surfaces the API message for a rejected token", async () => {
+      fetchMock.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: async () => ({ error: { code: "unauthorized", message: "Invalid cancel token" } }),
+      });
+
+      const client = new ApiClient();
+      await expect(
+        client.rescheduleBooking("bkg-123", "bad", { new_start_time: "2026-03-20T15:00:00Z" }),
+      ).rejects.toEqual({ code: "unknown", message: "Invalid cancel token" });
     });
   });
 
@@ -434,7 +491,7 @@ describe("ApiClient", () => {
         }),
       ).rejects.toEqual({
         code: "slot_unavailable",
-        message: "This time slot is no longer available",
+        message: "Waitlist full",
       });
     });
   });

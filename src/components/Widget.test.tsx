@@ -90,6 +90,43 @@ describe("Widget demoEventType merge", () => {
   });
 });
 
+describe("Widget header location line", () => {
+  it("shows the demo event's conferencing provider", () => {
+    render(<Widget config={{ eventTypeId: "demo", demo: true }} />);
+
+    expect(screen.getByText("Google Meet")).toBeInTheDocument();
+  });
+
+  it("shows the address for an in-person demo event", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { conferencing_provider: "in_person", location: "1 High St" },
+        }}
+      />,
+    );
+
+    expect(document.querySelector(".astrocal-location")).toHaveTextContent("In person · 1 High St");
+  });
+
+  it("shows nothing when no location is configured", () => {
+    render(
+      <Widget
+        config={{
+          eventTypeId: "demo",
+          demo: true,
+          demoEventType: { conferencing_provider: null },
+        }}
+      />,
+    );
+
+    expect(screen.queryByText("Google Meet")).not.toBeInTheDocument();
+    expect(screen.queryByText(/In person/)).not.toBeInTheDocument();
+  });
+});
+
 describe("Widget duration_options step transitions on update", () => {
   it("switches from calendar to duration step when options cross 2-option threshold", () => {
     const { rerender } = render(

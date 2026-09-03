@@ -81,3 +81,21 @@ export function firstDayOfMonthStr(year: number, month: number): string {
   const m = String(month).padStart(2, "0");
   return `${year}-${m}-01`;
 }
+
+/**
+ * Formats an ISO timestamp as a date and time in one zone, e.g.
+ * "Friday, January 15 at 9:00 AM". Both parts come from the same zone so the
+ * day never drifts from the time across midnight.
+ */
+export function formatDateTime(isoString: string, timezone: string, locale = "en-US"): string {
+  const date = new Date(isoString);
+  const parts = new Intl.DateTimeFormat(locale, {
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    timeZone: timezone,
+  }).formatToParts(date);
+  const part = (type: Intl.DateTimeFormatPartTypes): string =>
+    parts.find((p) => p.type === type)?.value ?? "";
+  return `${part("weekday")}, ${part("month")} ${part("day")} at ${formatTime(isoString, timezone, locale)}`;
+}

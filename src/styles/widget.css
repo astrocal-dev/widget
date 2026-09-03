@@ -98,8 +98,16 @@
 .astrocal-header-meta {
   display: flex;
   align-items: center;
-  gap: 12px;
+  flex-wrap: wrap;
+  gap: 4px 12px;
   margin-top: 8px;
+}
+
+.astrocal-location {
+  display: inline-block;
+  color: var(--astrocal-text-secondary);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 
 .astrocal-duration {
@@ -249,10 +257,14 @@
   text-align: center;
 }
 
+.astrocal-calendar-row {
+  display: contents;
+}
+
 .astrocal-day-header {
   font-size: 11px;
   font-weight: 600;
-  color: var(--astrocal-text-muted);
+  color: var(--astrocal-text-secondary);
   text-transform: uppercase;
   padding: 4px 0 8px;
 }
@@ -321,6 +333,33 @@
   color: var(--astrocal-text-muted);
   font-size: 13px;
   font-family: inherit;
+}
+
+.astrocal-back-link:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* Recovery action inside an error alert, e.g. "Pick another time" after a 409. */
+.astrocal-error-action {
+  display: block;
+  margin-top: 6px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--astrocal-primary);
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  text-decoration: underline;
+}
+
+.astrocal-error-action:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+  border-radius: 2px;
 }
 
 .astrocal-back-link:hover {
@@ -634,6 +673,86 @@
   margin-bottom: 4px;
 }
 
+.astrocal-meeting-link {
+  display: inline-flex;
+  align-items: center;
+  margin: 8px 0;
+  padding: 8px 16px;
+  border: 1px solid var(--astrocal-primary);
+  border-radius: var(--astrocal-radius);
+  color: var(--astrocal-primary);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.astrocal-meeting-link:hover {
+  background: var(--astrocal-bg-hover);
+}
+
+.astrocal-meeting-link:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
+}
+
+/* A brand colour dark enough for button text rarely passes as link text on a dark surface. */
+:host([data-theme="dark"]) .astrocal-meeting-link {
+  background: var(--astrocal-primary);
+  color: var(--astrocal-primary-text);
+}
+
+:host([data-theme="dark"]) .astrocal-meeting-link:hover {
+  background: var(--astrocal-primary-hover);
+}
+
+.astrocal-confirmation .astrocal-location {
+  display: block;
+  color: var(--astrocal-text);
+  font-size: 14px;
+  white-space: pre-line;
+}
+
+.astrocal-meeting-pending {
+  font-style: italic;
+}
+
+/* ─── Reschedule Confirm ───────────────────────────────────────── */
+
+.astrocal-reschedule-times {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--astrocal-border);
+  border-radius: var(--astrocal-radius);
+}
+
+.astrocal-reschedule-row {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.astrocal-reschedule-row dt {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--astrocal-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.astrocal-reschedule-row dd {
+  margin: 0;
+  font-size: 14px;
+  color: var(--astrocal-text-secondary);
+}
+
+.astrocal-reschedule-row-new dd {
+  color: var(--astrocal-text);
+  font-weight: 600;
+}
+
 /* ─── Attendee List (Confirmation) ────────────────────────────── */
 
 .astrocal-attendee-list {
@@ -770,8 +889,9 @@
   padding: 0;
 }
 
-.astrocal-timezone select:focus {
-  outline: none;
+.astrocal-timezone select:focus-visible {
+  outline: 2px solid var(--astrocal-border-focus);
+  outline-offset: 2px;
   color: var(--astrocal-text);
 }
 
@@ -946,5 +1066,26 @@
   .astrocal-field textarea,
   .astrocal-field select {
     font-size: 16px; /* prevent iOS zoom on focus */
+  }
+}
+
+/* ─── Focus targets and motion ─────────────────────────────────── */
+
+/* Step headings receive programmatic focus on step change; no ring for that. */
+[data-astrocal-focus]:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.astrocal-step-heading {
+  margin: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .astrocal-spinner,
+  .astrocal-shimmer,
+  .astrocal-widget * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
   }
 }

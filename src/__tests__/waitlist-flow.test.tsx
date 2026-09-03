@@ -17,6 +17,8 @@ describe("waitlist flow integration", () => {
     buffer_before_minutes: 0,
     buffer_after_minutes: 0,
     minimum_notice_minutes: 0,
+    conferencing_provider: null,
+    location: null,
     color: "#3b82f6",
     timezone: "America/New_York",
     active: true,
@@ -341,9 +343,7 @@ describe("waitlist flow integration", () => {
       fireEvent.click(screen.getByRole("button", { name: /join waitlist/i }));
 
       await waitFor(() => {
-        expect(screen.getByRole("alert")).toHaveTextContent(
-          "This time slot is no longer available",
-        );
+        expect(screen.getByRole("alert")).toHaveTextContent("Waitlist full");
       });
 
       // Form should still be visible
@@ -351,7 +351,7 @@ describe("waitlist flow integration", () => {
 
       expect(onError).toHaveBeenCalledWith({
         code: "slot_unavailable",
-        message: "This time slot is no longer available",
+        message: "Waitlist full",
       });
     }
   });

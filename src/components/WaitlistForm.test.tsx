@@ -15,6 +15,8 @@ describe("WaitlistForm", () => {
     buffer_before_minutes: 0,
     buffer_after_minutes: 0,
     minimum_notice_minutes: 0,
+    conferencing_provider: null,
+    location: null,
     color: "#3b82f6",
     timezone: "America/New_York",
     active: true,

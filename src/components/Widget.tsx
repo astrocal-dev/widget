@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "preact/hooks";
+import { useState, useEffect, useCallback, useRef } from "preact/hooks";
 import type {
   WidgetConfig,
   WidgetState,
@@ -22,14 +22,23 @@ import { WaitlistConfirmation } from "./WaitlistConfirmation";
 import { ErrorScreen } from "./ErrorScreen";
 import { TimezoneSelect } from "./TimezoneSelect";
 import { DurationSelector } from "./DurationSelector";
+import { RescheduleConfirm } from "./RescheduleConfirm";
+import { locationParts } from "../utils/location";
 
 interface WidgetProps {
   config: WidgetConfig;
 }
 
-/** Resolves the initial state after loading an event type. */
-function resolveLoadedState(eventType: EventType): WidgetState {
+/**
+ * Resolves the initial state after loading an event type.
+ * Reschedule mode skips the duration selector: the API always reschedules
+ * at the event type's default duration.
+ */
+function resolveLoadedState(eventType: EventType, rescheduleMode = false): WidgetState {
   const options = eventType.duration_options;
+  if (rescheduleMode) {
+    return { step: "calendar", eventType, selectedDuration: eventType.duration_minutes };
+  }
   if (options && options.length >= 2) {
     return { step: "duration", eventType };
   }
@@ -39,6 +48,8 @@ function resolveLoadedState(eventType: EventType): WidgetState {
 }
 
 export function Widget({ config }: WidgetProps) {
+  const reschedule = config.reschedule;
+  const rescheduleMode = reschedule != null;
   const [state, setState] = useState<WidgetState>({ step: "loading" });
   const [timezone, setTimezone] = useState(() => config.timezone || detectTimezone());
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -46,6 +57,17 @@ export function Widget({ config }: WidgetProps) {
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<WidgetError | null>(null);
   const [waitlistAvailableForDate, setWaitlistAvailableForDate] = useState(false);
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const prevStepRef = useRef<WidgetState["step"] | null>(null);
+
+  // Move focus to the new step so keyboard and screen-reader users are not dropped on <body>.
+  // Skipped on first load so an inline embed does not scroll the host page.
+  useEffect(() => {
+    const prev = prevStepRef.current;
+    prevStepRef.current = state.step;
+    if (!prev || prev === "loading" || prev === state.step) return;
+    bodyRef.current?.querySelector<HTMLElement>("[data-astrocal-focus]")?.focus();
+  }, [state.step]);
 
   const api = new ApiClient(config.apiUrl);
 
@@ -66,7 +88,7 @@ export function Widget({ config }: WidgetProps) {
       try {
         const eventType = await api.getEventType(config.eventTypeId);
         if (!cancelled) {
-          setState(resolveLoadedState(eventType));
+          setState(resolveLoadedState(eventType, rescheduleMode));
         }
       } catch (err) {
         if (!cancelled) {
@@ -147,6 +169,7 @@ export function Widget({ config }: WidgetProps) {
         state.step !== "calendar" &&
         state.step !== "timeslots" &&
         state.step !== "form" &&
+        state.step !== "reschedule-confirm" &&
         state.step !== "waitlist-form"
       )
         return;
@@ -198,7 +221,9 @@ export function Widget({ config }: WidgetProps) {
           dateSlots.length === 0 &&
           availability.capped === true &&
           availability.waitlist_available === true;
-        setWaitlistAvailableForDate(hasSlotLevelWaitlist || hasResponseLevelWaitlist);
+        setWaitlistAvailableForDate(
+          !rescheduleMode && (hasSlotLevelWaitlist || hasResponseLevelWaitlist),
+        );
         // Show available (non-capped) slots; if all are capped, show empty with waitlist option
         const availableSlots = dateSlots.filter((s) => !s.capped);
         setState({ step: "timeslots", eventType, date, slots: availableSlots, selectedDuration });
@@ -211,7 +236,7 @@ export function Widget({ config }: WidgetProps) {
       }
     },
 
-    [state, timezone, config.apiUrl],
+    [state, timezone, config.apiUrl, rescheduleMode],
   );
 
   const handleDateSelect = useCallback(
@@ -236,14 +261,38 @@ export function Widget({ config }: WidgetProps) {
       if (state.step === "timeslots") {
         setSubmitError(null);
         setState({
-          step: "form",
+          step: rescheduleMode ? "reschedule-confirm" : "form",
           eventType: state.eventType,
           slot,
           selectedDuration: state.selectedDuration,
         });
       }
     },
-    [state],
+    [state, rescheduleMode],
+  );
+
+  const handleRescheduleConfirm = useCallback(
+    async (reason: string) => {
+      if (state.step !== "reschedule-confirm" || !reschedule) return;
+
+      setSubmitting(true);
+      setSubmitError(null);
+      try {
+        const booking = await api.rescheduleBooking(reschedule.bookingId, reschedule.token, {
+          new_start_time: state.slot.start_time,
+          reason: reason || undefined,
+        });
+        setState({ step: "rescheduled", eventType: state.eventType, booking });
+        config.onBookingRescheduled?.(booking);
+      } catch (err) {
+        const error = err as WidgetError;
+        setSubmitError(error);
+        config.onError?.(error);
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [state, reschedule],
   );
 
   const handleFormSubmit = useCallback(
@@ -305,7 +354,7 @@ export function Widget({ config }: WidgetProps) {
   );
 
   const handleReset = useCallback(() => {
-    setState(resolveLoadedState(demoEventType));
+    setState(resolveLoadedState(demoEventType, rescheduleMode));
     setSelectedDate(null);
   }, []);
 
@@ -317,9 +366,13 @@ export function Widget({ config }: WidgetProps) {
   }, [state]);
 
   const handleBackToCalendar = useCallback(() => {
-    if (state.step === "timeslots" || state.step === "form") {
+    if (
+      state.step === "timeslots" ||
+      state.step === "form" ||
+      state.step === "reschedule-confirm"
+    ) {
       const options = state.eventType.duration_options;
-      if (options && options.length >= 2) {
+      if (!rescheduleMode && options && options.length >= 2) {
         setState({ step: "duration", eventType: state.eventType });
       } else {
         setState({
@@ -330,16 +383,17 @@ export function Widget({ config }: WidgetProps) {
       }
       setSelectedDate(null);
     }
-  }, [state]);
+  }, [state, rescheduleMode]);
 
   const handleBackToSlots = useCallback(() => {
-    if (state.step === "form" && selectedDate) {
+    if ((state.step === "form" || state.step === "reschedule-confirm") && selectedDate) {
       fetchSlots(selectedDate);
     }
   }, [state, selectedDate, fetchSlots]);
 
   const handleWaitlistSelect = useCallback(() => {
-    if (state.step === "timeslots") {
+    // Reschedule mode never creates anything new, so the waitlist is off limits.
+    if (state.step === "timeslots" && !rescheduleMode) {
       setSubmitError(null);
       setState({
         step: "waitlist-form",
@@ -348,7 +402,7 @@ export function Widget({ config }: WidgetProps) {
         selectedDuration: state.selectedDuration,
       });
     }
-  }, [state]);
+  }, [state, rescheduleMode]);
 
   const handleWaitlistSubmit = useCallback(
     async (data: { name: string; email: string; notes: string }) => {
@@ -388,7 +442,7 @@ export function Widget({ config }: WidgetProps) {
     (async () => {
       try {
         const eventType = await api.getEventType(config.eventTypeId);
-        setState(resolveLoadedState(eventType));
+        setState(resolveLoadedState(eventType, rescheduleMode));
       } catch (err) {
         const error = err as WidgetError;
         setState({ step: "error", error });
@@ -415,6 +469,8 @@ export function Widget({ config }: WidgetProps) {
     }
   }, [timezone]);
 
+  const headerLocation = "eventType" in state ? locationParts(state.eventType) : null;
+
   return (
     <div class="astrocal-widget">
       {/* Header - shown for duration, calendar, timeslots, form, and waitlist states */}
@@ -422,6 +478,7 @@ export function Widget({ config }: WidgetProps) {
         state.step === "calendar" ||
         state.step === "timeslots" ||
         state.step === "form" ||
+        state.step === "reschedule-confirm" ||
         state.step === "waitlist-form" ||
         state.step === "waitlist-confirmation") && (
         <div class="astrocal-widget-header">
@@ -432,9 +489,20 @@ export function Widget({ config }: WidgetProps) {
             state.step !== "waitlist-confirmation" && (
               <div class="astrocal-header-meta">
                 <div class="astrocal-duration">{state.selectedDuration} min</div>
-                {state.eventType.price_amount != null && (
+                {!rescheduleMode && state.eventType.price_amount != null && (
                   <div class="astrocal-price">
                     {formatPrice(state.eventType.price_amount, state.eventType.price_currency)}
+                  </div>
+                )}
+                {headerLocation && (
+                  <div class="astrocal-location">
+                    {headerLocation.label}
+                    {headerLocation.detail && (
+                      <>
+                        <span aria-hidden="true"> · </span>
+                        {headerLocation.detail}
+                      </>
+                    )}
                   </div>
                 )}
               </div>
@@ -442,7 +510,7 @@ export function Widget({ config }: WidgetProps) {
         </div>
       )}
 
-      <div class="astrocal-widget-body">
+      <div class="astrocal-widget-body" ref={bodyRef}>
         {state.step === "loading" && (
           <div class="astrocal-loading">
             <div class="astrocal-spinner" role="status" aria-label="Loading" />
@@ -457,16 +525,18 @@ export function Widget({ config }: WidgetProps) {
 
         {state.step === "calendar" && (
           <>
-            {state.eventType.duration_options && state.eventType.duration_options.length >= 2 && (
-              <button
-                type="button"
-                class="astrocal-back-link"
-                onClick={handleBackToDuration}
-                aria-label="Change duration"
-              >
-                &#8249; Change duration
-              </button>
-            )}
+            {!rescheduleMode &&
+              state.eventType.duration_options &&
+              state.eventType.duration_options.length >= 2 && (
+                <button
+                  type="button"
+                  class="astrocal-back-link"
+                  onClick={handleBackToDuration}
+                  aria-label="Change duration"
+                >
+                  &#8249; Change duration
+                </button>
+              )}
             <Calendar
               timezone={timezone}
               selectedDate={selectedDate}
@@ -511,6 +581,28 @@ export function Widget({ config }: WidgetProps) {
             timezone={timezone}
             demo={config.demo}
             onReset={handleReset}
+          />
+        )}
+
+        {state.step === "reschedule-confirm" && (
+          <RescheduleConfirm
+            eventType={state.eventType}
+            slot={state.slot}
+            currentStartTime={reschedule?.currentStartTime}
+            timezone={timezone}
+            submitting={submitting}
+            error={submitError}
+            onConfirm={handleRescheduleConfirm}
+            onBack={handleBackToSlots}
+          />
+        )}
+
+        {state.step === "rescheduled" && (
+          <Confirmation
+            eventType={state.eventType}
+            booking={state.booking}
+            timezone={timezone}
+            variant="rescheduled"
           />
         )}
 

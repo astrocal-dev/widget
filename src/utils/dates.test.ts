@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import {
+  formatDateTime,
   daysInMonth,
   firstDayOfMonth,
   toDateString,
@@ -230,5 +231,17 @@ describe("date utils", () => {
     it("pads single-digit months", () => {
       expect(firstDayOfMonthStr(2024, 3)).toBe("2024-03-01");
     });
+  });
+});
+
+describe("formatDateTime", () => {
+  it("keeps the date and time in the same zone across UTC midnight", () => {
+    // 02:00 UTC on the 11th is still the evening of the 10th in New York.
+    expect(formatDateTime("2026-09-11T02:00:00Z", "America/New_York")).toMatch(
+      /^Thursday, September 10 at 10:00\s?PM$/,
+    );
+    expect(formatDateTime("2026-09-11T02:00:00Z", "UTC")).toMatch(
+      /^Friday, September 11 at 2:00\s?AM$/,
+    );
   });
 });

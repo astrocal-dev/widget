@@ -71,7 +71,9 @@ export function TimeSlots({
         >
           &#8249;
         </button>
-        <span class="astrocal-slots-date">{formatDate(date)}</span>
+        <span class="astrocal-slots-date" data-astrocal-focus tabIndex={-1}>
+          {formatDate(date)}
+        </span>
       </div>
 
       {loading ? (

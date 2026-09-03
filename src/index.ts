@@ -5,6 +5,16 @@ import { Widget } from "./components/Widget";
 import { PopupOverlay } from "./components/PopupOverlay";
 
 export type { WidgetConfig, ThemeConfig, BookingResult, WidgetError };
+export type { ConferencingProvider, EventType } from "./types";
+export {
+  locationLabel,
+  locationParts,
+  providerLabel,
+  joinLabel,
+  isVideoProvider,
+} from "./utils/location";
+export { safeMeetingUrl } from "./utils/safe-url";
+export { formatDateTime } from "./utils/dates";
 
 /** Active popup host element (for close()). */
 let popupHost: HTMLElement | null = null;

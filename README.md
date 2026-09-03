@@ -90,19 +90,21 @@ Scans the DOM for elements with `data-astrocal-*` attributes and mounts widgets 
 
 ## Configuration
 
-| Property           | Type                               | Default                      | Description                                |
-| ------------------ | ---------------------------------- | ---------------------------- | ------------------------------------------ |
-| `eventTypeId`      | `string`                           | required                     | Event type UUID to display                 |
-| `apiUrl`           | `string`                           | `"https://api.astrocal.dev"` | API base URL                               |
-| `mode`             | `"inline" \| "popup"`              | `"popup"`                    | Render mode                                |
-| `target`           | `string \| HTMLElement`            | ---                          | DOM element or CSS selector (inline mode)  |
-| `timezone`         | `string`                           | auto-detected                | IANA timezone override                     |
-| `theme`            | `ThemeConfig`                      | ---                          | CSS custom property overrides              |
-| `colorScheme`      | `"light" \| "dark" \| "auto"`      | `"auto"`                     | Color scheme                               |
-| `demo`             | `boolean`                          | `false`                      | Enable demo mode (mock data, no API calls) |
-| `onBookingCreated` | `(booking: BookingResult) => void` | ---                          | Booking success callback                   |
-| `onError`          | `(error: WidgetError) => void`     | ---                          | Error callback                             |
-| `onClose`          | `() => void`                       | ---                          | Popup close callback                       |
+| Property               | Type                                      | Default                      | Description                                            |
+| ---------------------- | ----------------------------------------- | ---------------------------- | ------------------------------------------------------ |
+| `eventTypeId`          | `string`                                  | required                     | Event type UUID to display                             |
+| `apiUrl`               | `string`                                  | `"https://api.astrocal.dev"` | API base URL                                           |
+| `mode`                 | `"inline" \| "popup"`                     | `"popup"`                    | Render mode                                            |
+| `target`               | `string \| HTMLElement`                   | ---                          | DOM element or CSS selector (inline mode)              |
+| `timezone`             | `string`                                  | auto-detected                | IANA timezone override                                 |
+| `theme`                | `ThemeConfig`                             | ---                          | CSS custom property overrides                          |
+| `colorScheme`          | `"light" \| "dark" \| "auto"`             | `"auto"`                     | Color scheme                                           |
+| `demo`                 | `boolean`                                 | `false`                      | Enable demo mode (mock data, no API calls)             |
+| `onBookingCreated`     | `(booking: BookingResult) => void`        | ---                          | Booking success callback                               |
+| `onBookingRescheduled` | `(booking: BookingResult) => void`        | ---                          | Reschedule success callback (reschedule mode)          |
+| `reschedule`           | `{ bookingId, token, currentStartTime? }` | ---                          | Reschedule an existing booking instead of creating one |
+| `onError`              | `(error: WidgetError) => void`            | ---                          | Error callback                                         |
+| `onClose`              | `() => void`                              | ---                          | Popup close callback                                   |
 
 ## Theming
 
@@ -133,6 +135,20 @@ open({
 | `borderFocusColor`  | `--astrocal-border-focus`  | Focused border color |
 | `borderRadius`      | `--astrocal-radius`        | Border radius        |
 | `fontFamily`        | `--astrocal-font`          | Font family          |
+
+## Reschedule Mode
+
+Move an existing booking instead of creating a new one by passing its ID and cancel token:
+
+```typescript
+open({
+  eventTypeId: "YOUR-EVENT-TYPE-ID",
+  reschedule: { bookingId: "BOOKING-ID", token: "CANCEL-TOKEN" },
+  onBookingRescheduled: (booking) => console.log(booking.start_time),
+});
+```
+
+The widget skips the details form, asks the booker to confirm the new time, and calls the token-authenticated reschedule endpoint. The header also shows the event's location (Zoom, Google Meet, Microsoft Teams, a custom video call, or an in-person address), and the confirmation screen shows the join link or address.
 
 ## SSR / Server-Side Rendering
 

@@ -20,6 +20,14 @@ export interface WidgetConfig {
   onBookingCreated?: (booking: BookingResult) => void;
   /** Callback fired when a booking requires payment (pending_payment status). */
   onPaymentRequired?: (booking: BookingResult) => void;
+  /**
+   * Reschedule an existing booking instead of creating a new one.
+   * The token is the booking's cancel token from the confirmation email.
+   * `currentStartTime` (ISO 8601) lets the confirm step show the old time.
+   */
+  reschedule?: { bookingId: string; token: string; currentStartTime?: string };
+  /** Callback fired after a booking is successfully rescheduled (reschedule mode). */
+  onBookingRescheduled?: (booking: BookingResult) => void;
   /** Callback fired when the widget encounters an error. */
   onError?: (error: WidgetError) => void;
   /** Callback fired when the popup is closed. */
@@ -37,6 +45,8 @@ export interface WidgetConfig {
       | "buffer_before_minutes"
       | "buffer_after_minutes"
       | "color"
+      | "conferencing_provider"
+      | "location"
     >
   >;
   /** Availability rules for demo mode. When provided, slots are generated only within these time windows. Only used when demo is true. */
@@ -60,6 +70,14 @@ export interface ThemeConfig {
   fontFamily?: string;
 }
 
+/** Where a meeting happens, as reported by the public API. */
+export type ConferencingProvider =
+  | "zoom"
+  | "google_meet"
+  | "microsoft_teams"
+  | "custom"
+  | "in_person";
+
 /** Event type data returned by the public API. */
 export interface EventType {
   id: string;
@@ -79,6 +97,10 @@ export interface EventType {
   price_amount: number | null;
   price_currency: string;
   max_attendees: number;
+  /** Null when the organiser has not set a location. */
+  conferencing_provider: ConferencingProvider | null;
+  /** Address for in-person events; null otherwise. */
+  location: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -133,6 +155,12 @@ export interface CreateGroupBookingInput {
   duration?: number;
 }
 
+/** Reschedule request body (reschedule mode). */
+export interface RescheduleBookingInput {
+  new_start_time: string;
+  reason?: string;
+}
+
 /** Waitlist entry creation request body. */
 export interface CreateWaitlistInput {
   event_type_id: string;
@@ -178,6 +206,10 @@ export interface BookingResult {
   notes: string | null;
   cancel_token: string;
   attendee_count: number;
+  /** Join link for video meetings; null for in-person or when creation is deferred. */
+  meeting_url: string | null;
+  /** Address for in-person meetings; null otherwise. */
+  location: string | null;
   attendees?: AttendeeResult[];
   payment?: {
     amount: number;
@@ -219,5 +251,12 @@ export type WidgetState =
   | { step: "form"; eventType: EventType; slot: TimeSlot; selectedDuration: number }
   | { step: "confirmation"; eventType: EventType; booking: BookingResult }
   | { step: "payment"; eventType: EventType; booking: BookingResult }
+  | {
+      step: "reschedule-confirm";
+      eventType: EventType;
+      slot: TimeSlot;
+      selectedDuration: number;
+    }
+  | { step: "rescheduled"; eventType: EventType; booking: BookingResult }
   | { step: "waitlist-form"; eventType: EventType; date: string; selectedDuration: number }
   | { step: "waitlist-confirmation"; eventType: EventType; entry: WaitlistResult };

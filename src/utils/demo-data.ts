@@ -1,4 +1,5 @@
 import type { EventType, TimeSlot, BookingResult } from "../types";
+import { isVideoProvider } from "./location";
 
 /** Mock event type used in demo mode. */
 export const DEMO_EVENT_TYPE: EventType = {
@@ -19,6 +20,8 @@ export const DEMO_EVENT_TYPE: EventType = {
   price_amount: null,
   price_currency: "usd",
   max_attendees: 1,
+  conferencing_provider: "google_meet",
+  location: null,
   created_at: "2026-01-01T00:00:00Z",
   updated_at: "2026-01-01T00:00:00Z",
 };
@@ -123,6 +126,11 @@ export function createDemoBooking(
     notes: data.notes || null,
     cancel_token: "demo-token",
     attendee_count: 1,
+    // A stand-in link so the preview shows the join button; no real meeting exists.
+    meeting_url: isVideoProvider(eventType.conferencing_provider)
+      ? "https://www.astrocal.dev"
+      : null,
+    location: eventType.conferencing_provider === "in_person" ? eventType.location : null,
     created_at: new Date().toISOString(),
   };
 }

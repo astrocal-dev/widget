@@ -15,6 +15,8 @@ describe("PaymentRedirect", () => {
     buffer_before_minutes: 0,
     buffer_after_minutes: 0,
     minimum_notice_minutes: 0,
+    conferencing_provider: null,
+    location: null,
     color: "#3b82f6",
     timezone: "America/New_York",
     active: true,
@@ -37,6 +39,8 @@ describe("PaymentRedirect", () => {
     invitee_timezone: "America/New_York",
     notes: null,
     cancel_token: "tok-xyz",
+    meeting_url: null,
+    location: null,
     attendee_count: 1,
     payment: {
       amount: 5000,
