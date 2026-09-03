@@ -71,6 +71,7 @@ export interface EventType {
   duration_options: number[] | null;
   buffer_before_minutes: number;
   buffer_after_minutes: number;
+  minimum_notice_minutes: number;
   color: string;
   timezone: string;
   active: boolean;

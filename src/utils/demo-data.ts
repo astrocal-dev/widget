@@ -11,6 +11,7 @@ export const DEMO_EVENT_TYPE: EventType = {
   duration_options: null,
   buffer_before_minutes: 0,
   buffer_after_minutes: 0,
+  minimum_notice_minutes: 0,
   color: "#2563eb",
   timezone: "UTC",
   active: true,
