@@ -1,4 +1,5 @@
 import type { EventType, BookingResult } from "../types";
+import { TEST_IDS } from "../types";
 import { formatDateTime } from "../utils/dates";
 import { joinLabel, isVideoProvider } from "../utils/location";
 import { safeMeetingUrl } from "../utils/safe-url";
@@ -25,7 +26,7 @@ export function Confirmation({
   const rescheduled = variant === "rescheduled";
 
   return (
-    <div class="astrocal-confirmation" role="status">
+    <div class="astrocal-confirmation" role="status" data-testid={TEST_IDS.confirmation}>
       <div class="astrocal-confirmation-icon" aria-hidden="true">
         &#10003;
       </div>

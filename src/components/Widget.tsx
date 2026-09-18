@@ -26,6 +26,7 @@ import { TimezoneSelect } from "./TimezoneSelect";
 import { DurationSelector } from "./DurationSelector";
 import { RescheduleConfirm } from "./RescheduleConfirm";
 import { locationParts } from "../utils/location";
+import { TEST_IDS } from "../types";
 
 interface WidgetProps {
   config: WidgetConfig;
@@ -526,7 +527,7 @@ export function Widget({ config }: WidgetProps) {
   const headerLocation = "eventType" in state ? locationParts(state.eventType) : null;
 
   return (
-    <div class="astrocal-widget">
+    <div class="astrocal-widget" data-testid={TEST_IDS.widget}>
       {/* Header - shown for duration, calendar, timeslots, form, and waitlist states */}
       {(state.step === "duration" ||
         state.step === "calendar" ||

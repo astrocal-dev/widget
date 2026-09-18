@@ -15,6 +15,15 @@ export {
 } from "./utils/location";
 export { safeMeetingUrl } from "./utils/safe-url";
 export { formatDateTime } from "./utils/dates";
+export { TEST_IDS } from "./types";
+
+/**
+ * The published version of this bundle.
+ *
+ * Substituted at build time, so `Astrocal.version` on the CDN global reports
+ * which build a page is actually running (PRD-173).
+ */
+export const version: string = __ASTROCAL_WIDGET_VERSION__;
 
 /** Active popup host element (for close()). */
 let popupHost: HTMLElement | null = null;

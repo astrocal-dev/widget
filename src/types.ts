@@ -1,3 +1,34 @@
+/**
+ * Stable `data-testid` hooks on the widget's markup (PRD-173).
+ *
+ * Treat these as public API. End-to-end tests select on them precisely so that
+ * markup and styling changes do not silently break the only check that proves
+ * the booking flow still works. The widget mounts into an open shadow root, so
+ * Playwright resolves them without special handling.
+ */
+export const TEST_IDS = {
+  /** The widget root, present on every step. */
+  widget: "astrocal-widget",
+  /** The month grid. */
+  calendar: "astrocal-calendar",
+  /** One bookable day. Past days are not marked. */
+  day: "astrocal-day",
+  /** One available time slot. */
+  slot: "astrocal-slot",
+  /** The "no times for this date" panel. */
+  slotsEmpty: "astrocal-slots-empty",
+  /** The invitee details form. */
+  bookingForm: "astrocal-booking-form",
+  /** The form's submit control. */
+  submit: "astrocal-submit",
+  /** The confirmation screen of a completed booking. */
+  confirmation: "astrocal-confirmation",
+  /** The full-panel error screen. */
+  error: "astrocal-error",
+  /** One duration choice, when the event type offers several. */
+  durationOption: "astrocal-duration-option",
+} as const;
+
 /** Configuration for embedding the Astrocal widget. */
 export interface WidgetConfig {
   /** The event type UUID to display. */

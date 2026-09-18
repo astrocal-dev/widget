@@ -1,5 +1,6 @@
 import { useRef, useEffect, useState } from "preact/hooks";
 import type { TimeSlot } from "../types";
+import { TEST_IDS } from "../types";
 import { formatTime, formatDate } from "../utils/dates";
 
 const SCROLL_THRESHOLD = 2;
@@ -81,7 +82,7 @@ export function TimeSlots({
           <div class="astrocal-spinner" role="status" aria-label="Loading time slots" />
         </div>
       ) : slots.length === 0 ? (
-        <div class="astrocal-slots-empty" role="status">
+        <div class="astrocal-slots-empty" role="status" data-testid={TEST_IDS.slotsEmpty}>
           {waitlistAvailable && onWaitlistSelect ? (
             <>
               <p>This date is fully booked.</p>
@@ -118,6 +119,7 @@ export function TimeSlots({
               class="astrocal-slot"
               onClick={() => onSlotSelect(slot)}
               role="listitem"
+              data-testid={TEST_IDS.slot}
             >
               {formatTime(slot.start_time, timezone)}
               {slot.spots_remaining != null && (

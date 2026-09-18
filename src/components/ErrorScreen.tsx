@@ -1,4 +1,5 @@
 import type { WidgetError } from "../types";
+import { TEST_IDS } from "../types";
 
 interface ErrorScreenProps {
   error: WidgetError;
@@ -9,7 +10,7 @@ export function ErrorScreen({ error, onRetry }: ErrorScreenProps) {
   const title = error.code === "not_found" ? "Not Found" : "Something went wrong";
 
   return (
-    <div class="astrocal-error" role="alert">
+    <div class="astrocal-error" role="alert" data-testid={TEST_IDS.error}>
       <div class="astrocal-error-icon" aria-hidden="true">
         &#33;
       </div>

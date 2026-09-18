@@ -1,4 +1,5 @@
 import type { EventType } from "../types";
+import { TEST_IDS } from "../types";
 
 interface DurationSelectorProps {
   eventType: EventType;
@@ -21,6 +22,7 @@ export function DurationSelector({ eventType, onSelect }: DurationSelectorProps)
             type="button"
             class="astrocal-duration-option"
             onClick={() => onSelect(duration)}
+            data-testid={TEST_IDS.durationOption}
           >
             {duration} min
           </button>

@@ -1,5 +1,6 @@
 import { useState, useCallback } from "preact/hooks";
 import type { EventType, TimeSlot, WidgetError, AttendeeInput } from "../types";
+import { TEST_IDS } from "../types";
 import { formatTime, formatDate } from "../utils/dates";
 import { formatPrice } from "../utils/format-price";
 
@@ -149,7 +150,12 @@ export function BookingForm({
   const date = slot.start_time.slice(0, 10);
 
   return (
-    <form class="astrocal-form" onSubmit={handleSubmit} noValidate>
+    <form
+      class="astrocal-form"
+      onSubmit={handleSubmit}
+      noValidate
+      data-testid={TEST_IDS.bookingForm}
+    >
       <div class="astrocal-form-header">
         <button
           type="button"
@@ -317,7 +323,12 @@ export function BookingForm({
         />
       </div>
 
-      <button type="submit" class="astrocal-submit-btn" disabled={submitting}>
+      <button
+        type="submit"
+        class="astrocal-submit-btn"
+        disabled={submitting}
+        data-testid={TEST_IDS.submit}
+      >
         {submitting
           ? "Booking..."
           : eventType.price_amount != null

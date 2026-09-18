@@ -1,4 +1,5 @@
 import { useState, useCallback, useRef, useEffect } from "preact/hooks";
+import { TEST_IDS } from "../types";
 import {
   daysInMonth,
   firstDayOfMonth,
@@ -134,7 +135,13 @@ export function Calendar({ timezone, selectedDate, onDateSelect }: CalendarProps
           &#8250;
         </button>
       </div>
-      <div ref={gridRef} class="astrocal-calendar-grid" role="grid" aria-label="Calendar">
+      <div
+        ref={gridRef}
+        class="astrocal-calendar-grid"
+        role="grid"
+        aria-label="Calendar"
+        data-testid={TEST_IDS.calendar}
+      >
         <div role="row" class="astrocal-calendar-row">
           {DAY_NAMES.map((name) => (
             <div key={name} class="astrocal-day-header" role="columnheader">
@@ -176,6 +183,7 @@ export function Calendar({ timezone, selectedDate, onDateSelect }: CalendarProps
                   aria-selected={isSelected}
                   tabIndex={isSelected ? 0 : -1}
                   role="gridcell"
+                  {...(isPast ? {} : { "data-testid": TEST_IDS.day })}
                 >
                   {day}
                 </button>
