@@ -32,6 +32,13 @@ export interface WidgetConfig {
   onError?: (error: WidgetError) => void;
   /** Callback fired when the popup is closed. */
   onClose?: () => void;
+  /**
+   * Callback fired on every step transition of the widget's internal flow.
+   *
+   * Purely local — the widget makes no request of its own for it, so an embed
+   * that passes no handler sends nothing. Never fires in demo mode.
+   */
+  onStepChange?: (event: WidgetStepEvent) => void;
   /** Enable demo mode — uses mock data, no API calls. */
   demo?: boolean;
   /** Override demo event type fields (title, description, duration, color). Only used when demo is true. */
@@ -260,3 +267,38 @@ export type WidgetState =
   | { step: "rescheduled"; eventType: EventType; booking: BookingResult }
   | { step: "waitlist-form"; eventType: EventType; date: string; selectedDuration: number }
   | { step: "waitlist-confirmation"; eventType: EventType; entry: WaitlistResult };
+
+/**
+ * Steps reported to `onStepChange`.
+ *
+ * Every state-machine step, plus `"submitting"` — a reported-only value fired
+ * just before a booking or waitlist POST, which has no state of its own because
+ * the widget stays on the form while the request is in flight.
+ */
+export type WidgetStep = WidgetState["step"] | "submitting";
+
+/** A single step transition, reported to `onStepChange`. */
+export interface WidgetStepEvent {
+  /** The step just entered. */
+  step: WidgetStep;
+  /** The step left behind; null on the widget's first report. */
+  previousStep: WidgetStep | null;
+  /** The event type the widget was configured with. */
+  eventTypeId: string;
+  /** The owning org, once the event type has loaded. */
+  organizationId?: string;
+  /** The duration in play, where the step has one. */
+  durationMinutes?: number;
+  /** Whether the invitee has picked a date. */
+  hasSelectedDate: boolean;
+  /** ISO start time of the chosen slot, from the form step onwards. */
+  slotStart?: string;
+  /** Set on `confirmation`, `payment` and `rescheduled`. */
+  bookingId?: string;
+  /** Whether the event type charges for the booking. */
+  isPaid?: boolean;
+  /** Whether the invitee is on the waitlist path rather than booking a slot. */
+  isWaitlist?: boolean;
+  /** Set on `error`, and on a failed submit that keeps the invitee in place. */
+  errorCode?: WidgetError["code"];
+}

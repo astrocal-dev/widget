@@ -6,6 +6,8 @@ import type {
   TimeSlot,
   WidgetError,
   AttendeeInput,
+  WidgetStep,
+  WidgetStepEvent,
 } from "../types";
 import { ApiClient } from "../utils/api";
 import { DEMO_EVENT_TYPE, generateDemoSlots, createDemoBooking } from "../utils/demo-data";
@@ -58,14 +60,59 @@ export function Widget({ config }: WidgetProps) {
   const [submitError, setSubmitError] = useState<WidgetError | null>(null);
   const [waitlistAvailableForDate, setWaitlistAvailableForDate] = useState(false);
   const bodyRef = useRef<HTMLDivElement>(null);
-  const prevStepRef = useRef<WidgetState["step"] | null>(null);
+  const prevStepRef = useRef<WidgetStep | null>(null);
 
-  // Move focus to the new step so keyboard and screen-reader users are not dropped on <body>.
-  // Skipped on first load so an inline embed does not scroll the host page.
+  /**
+   * Reports one step to the host page. Silent in demo mode so dashboard
+   * previews and the demo site never reach anybody's analytics.
+   */
+  function reportStep(step: WidgetStep, overrides: Partial<WidgetStepEvent> = {}) {
+    if (config.demo || !config.onStepChange) return;
+    const eventType = "eventType" in state ? state.eventType : undefined;
+    try {
+      config.onStepChange({
+        step,
+        previousStep: prevStepRef.current,
+        eventTypeId: config.eventTypeId,
+        organizationId: eventType?.organization_id,
+        durationMinutes: "selectedDuration" in state ? state.selectedDuration : undefined,
+        hasSelectedDate: selectedDate != null,
+        slotStart: "slot" in state ? state.slot.start_time : undefined,
+        bookingId: "booking" in state ? state.booking.id : undefined,
+        isPaid: eventType ? eventType.price_amount != null : undefined,
+        ...overrides,
+      });
+    } catch {
+      // The host's handler is not ours and one of these runs immediately before
+      // the booking POST. A throw here must never cost the invitee their booking,
+      // and there is nowhere useful to report it — the widget has no telemetry.
+    }
+  }
+
+  /**
+   * Reports the reported-only `submitting` step, and moves the previous-step
+   * marker onto it so a later failure is attributed to the submit, not the form.
+   */
+  function reportSubmitting(overrides: Partial<WidgetStepEvent> = {}) {
+    reportStep("submitting", overrides);
+    if (!config.demo) prevStepRef.current = "submitting";
+  }
+
+  // One effect for both jobs, so the previous step is read once and the two can
+  // never disagree about what the transition was.
   useEffect(() => {
     const prev = prevStepRef.current;
+    if (prev === state.step) return;
+
+    reportStep(state.step, {
+      errorCode: state.step === "error" ? state.error.code : undefined,
+      isWaitlist: state.step === "waitlist-form" || state.step === "waitlist-confirmation",
+    });
     prevStepRef.current = state.step;
-    if (!prev || prev === "loading" || prev === state.step) return;
+
+    // Move focus to the new step so keyboard and screen-reader users are not dropped on <body>.
+    // Skipped on first load so an inline embed does not scroll the host page.
+    if (!prev || prev === "loading") return;
     bodyRef.current?.querySelector<HTMLElement>("[data-astrocal-focus]")?.focus();
   }, [state.step]);
 
@@ -307,6 +354,12 @@ export function Widget({ config }: WidgetProps) {
 
       setSubmitting(true);
       setSubmitError(null);
+      // No step change wraps the POST — the invitee stays on the form — so the
+      // attempt is reported explicitly. Without it, a drop-off at payment or a
+      // failed submit is indistinguishable from never filling the form in.
+      // Deliberately outside the try: reportStep cannot throw, and a reporting
+      // failure must not surface to the invitee as a failed booking.
+      reportSubmitting();
 
       const duration =
         state.selectedDuration !== state.eventType.duration_minutes
@@ -410,6 +463,7 @@ export function Widget({ config }: WidgetProps) {
 
       setSubmitting(true);
       setSubmitError(null);
+      reportSubmitting({ isWaitlist: true });
       try {
         const entry = await api.createWaitlistEntry({
           event_type_id: state.eventType.id,

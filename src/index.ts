@@ -5,7 +5,7 @@ import { Widget } from "./components/Widget";
 import { PopupOverlay } from "./components/PopupOverlay";
 
 export type { WidgetConfig, ThemeConfig, BookingResult, WidgetError };
-export type { ConferencingProvider, EventType } from "./types";
+export type { ConferencingProvider, EventType, WidgetStep, WidgetStepEvent } from "./types";
 export {
   locationLabel,
   locationParts,
